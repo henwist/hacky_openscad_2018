@@ -103,7 +103,7 @@ mingw* {
 }
 
 CONFIG += qt
-QT += widgets concurrent multimedia
+QT += widgets concurrent opengl
 
 netbsd* {
    QMAKE_LFLAGS += -L/usr/X11R7/lib
