@@ -34,7 +34,7 @@ bool save_framebuffer_common(OffscreenContext *ctx, std::ostream &output)
 	if (!ctx) return false;
 	int samplesPerPixel = 4; // R, G, B and A
 	std::vector<GLubyte> pixels(ctx->width * ctx->height * samplesPerPixel);
-	glReadPixels(0, 0, ctx->width, ctx->height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+	//glReadPixels(0, 0, ctx->width, ctx->height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 
 	// Flip it vertically - images read from OpenGL buffers are upside-down
 	int rowBytes = samplesPerPixel * ctx->width;
@@ -57,11 +57,11 @@ bool save_framebuffer_common(OffscreenContext *ctx, std::ostream &output)
 OffscreenContext *create_offscreen_context_common(OffscreenContext *ctx)
 {
 	if (!ctx) return nullptr;
-	GLenum err = glewInit(); // must come after Context creation and before FBO c$
-	if (GLEW_OK != err) {
-		std::cerr << "Unable to init GLEW: " << glewGetErrorString(err) << "\n";
-		return nullptr;
-	}
+// 	GLenum err = glewInit(); // must come after Context creation and before FBO c$
+// 	if (GLEW_OK != err) {
+// 		std::cerr << "Unable to init GLEW: " << glewGetErrorString(err) << "\n";
+// 		return nullptr;
+// 	}
 
 	ctx->fbo = fbo_new();
 	if (!fbo_init(ctx->fbo, ctx->width, ctx->height)) {

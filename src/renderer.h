@@ -5,12 +5,13 @@
 #include "memory.h"
 #include "colormap.h"
 #include "enums.h"
+#include <QtGui/QOpenGLFunctions>
 
 #ifdef _MSC_VER // NULL
 #include <cstdlib>
 #endif
 
-class Renderer
+class Renderer : virtual protected QOpenGLFunctions
 {
 public:
 	Renderer();

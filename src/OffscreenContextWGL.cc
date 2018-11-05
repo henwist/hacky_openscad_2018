@@ -21,7 +21,7 @@ For more info:
 #include "system-gl.h"
 #include "fbo.h"
 
-#include <GL/gl.h> // must be included after glew.h
+//#include <GL/gl.h> // must be included after glew.h
 
 #include <map>
 #include <string>

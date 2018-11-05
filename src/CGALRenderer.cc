@@ -39,6 +39,7 @@
 #include "CGAL_OGL_Polyhedron.h"
 #include "CGAL_Nef_polyhedron.h"
 #include "cgal.h"
+#include <QtGui/QOpenGLFunctions>
 
 //#include "Preferences.h"
 
@@ -96,12 +97,14 @@ void CGALRenderer::setColorScheme(const ColorScheme &cs)
 
 void CGALRenderer::draw(bool showfaces, bool showedges) const
 {
+  QOpenGLFunctions *func = new QOpenGLFunctions();
+
 	PRINTD("draw()");
 	if (this->polyset) {
 		PRINTD("draw() polyset");
 		if (this->polyset->getDimension() == 2) {
 			// Draw 2D polygons
-			glDisable(GL_LIGHTING);
+			func->glDisable(GL_LIGHTING);
 // FIXME:		const QColor &col = Preferences::inst()->color(Preferences::CGAL_FACE_2D_COLOR);
 			glColor3f(0.0f, 0.75f, 0.60f);
 
@@ -115,13 +118,13 @@ void CGALRenderer::draw(bool showfaces, bool showedges) const
 			}
 		
 			// Draw 2D edges
-			glDisable(GL_DEPTH_TEST);
+			func->glDisable(GL_DEPTH_TEST);
 
-			glLineWidth(2);
+			func->glLineWidth(2);
 // FIXME:		const QColor &col2 = Preferences::inst()->color(Preferences::CGAL_EDGE_2D_COLOR);
 			glColor3f(1.0f, 0.0f, 0.0f);
 			this->polyset->render_edges(CSGMODE_NONE);
-			glEnable(GL_DEPTH_TEST);
+			func->glEnable(GL_DEPTH_TEST);
 		}
 		else {
 			// Draw 3D polygons

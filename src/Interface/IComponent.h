@@ -2,5 +2,7 @@
 
 class IComponent
 {
-  virtual ~IComponent();
+public:
+  IComponent() { }
+  virtual ~IComponent() { }
 };

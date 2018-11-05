@@ -1,12 +1,12 @@
 #pragma once
 
 #ifndef NULLGL
-#include <GL/glew.h>
+#include <QtGui/qopenglfunctions_2_0.h>
 
 #ifdef __APPLE__
  #include <OpenGL/OpenGL.h>
 #else
- #include <GL/gl.h>
+ //#include <GL/gl.h>
  #include <GL/glu.h>
 #endif
 

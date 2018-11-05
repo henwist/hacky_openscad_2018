@@ -88,82 +88,82 @@ OpenCSGPrim *OpenCSGRenderer::createCSGPrimitive(const CSGChainObject &csgobj, O
 void OpenCSGRenderer::renderCSGProducts(const CSGProducts &products, GLint *shaderinfo, 
 										bool highlight_mode, bool background_mode) const
 {
-#ifdef ENABLE_OPENCSG
-	for(const auto &product : products.products) {
-		std::vector<OpenCSG::Primitive*> primitives;
-		for(const auto &csgobj : product.intersections) {
-			if (csgobj.leaf->geom) primitives.push_back(createCSGPrimitive(csgobj, OpenCSG::Intersection, highlight_mode, background_mode, OpenSCADOperator::INTERSECTION));
-		}
-		for(const auto &csgobj : product.subtractions) {
-			if (csgobj.leaf->geom) primitives.push_back(createCSGPrimitive(csgobj, OpenCSG::Subtraction, highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE));
-		}
-		if (primitives.size() > 1) {
-			OpenCSG::render(primitives);
-			glDepthFunc(GL_EQUAL);
-		}
-		if (shaderinfo) glUseProgram(shaderinfo[0]);
-
-		for(const auto &csgobj : product.intersections) {
-			const Color4f &c = csgobj.leaf->color;
-				csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
-			
-			ColorMode colormode = ColorMode::NONE;
-			if (highlight_mode) {
-				colormode = ColorMode::HIGHLIGHT;
-			} else if (background_mode) {
-				colormode = ColorMode::BACKGROUND;
-			} else {
-				colormode = ColorMode::MATERIAL;
-			}
-			
-			glPushMatrix();
-			glMultMatrixd(csgobj.leaf->matrix.data());
-			
-			const Color4f c1 = setColor(colormode, c.data(), shaderinfo);
-			if (c1[3] == 1.0f) {
-				// object is opaque, draw normally
-				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
-			} else {
-				// object is transparent, so draw rear faces first.  Issue #1496
-				glEnable(GL_CULL_FACE);
-				glCullFace(GL_FRONT);
-				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
-				glCullFace(GL_BACK);
-				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
-				glDisable(GL_CULL_FACE);
-			}
-
-			glPopMatrix();
-		}
-		for(const auto &csgobj : product.subtractions) {
-			const Color4f &c = csgobj.leaf->color;
-				csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
-			
-			ColorMode colormode = ColorMode::NONE;
-			if (highlight_mode) {
-				colormode = ColorMode::HIGHLIGHT;
-			} else if (background_mode) {
-				colormode = ColorMode::BACKGROUND;
-			} else {
-				colormode = ColorMode::CUTOUT;
-			}
-			
-			setColor(colormode, c.data(), shaderinfo);
-			glPushMatrix();
-			glMultMatrixd(csgobj.leaf->matrix.data());
-			// negative objects should only render rear faces
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_FRONT);
-			render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
-			glDisable(GL_CULL_FACE);
-			glPopMatrix();
-		}
-
-		if (shaderinfo) glUseProgram(0);
-		for(auto &p : primitives) delete p;
-		glDepthFunc(GL_LEQUAL);
-	}
-#endif
+// #ifdef ENABLE_OPENCSG
+// 	for(const auto &product : products.products) {
+// 		std::vector<OpenCSG::Primitive*> primitives;
+// 		for(const auto &csgobj : product.intersections) {
+// 			if (csgobj.leaf->geom) primitives.push_back(createCSGPrimitive(csgobj, OpenCSG::Intersection, highlight_mode, background_mode, OpenSCADOperator::INTERSECTION));
+// 		}
+// 		for(const auto &csgobj : product.subtractions) {
+// 			if (csgobj.leaf->geom) primitives.push_back(createCSGPrimitive(csgobj, OpenCSG::Subtraction, highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE));
+// 		}
+// 		if (primitives.size() > 1) {
+// 			OpenCSG::render(primitives);
+// 			glDepthFunc(GL_EQUAL);
+// 		}
+// 		if (shaderinfo) glUseProgram(shaderinfo[0]);
+// 
+// 		for(const auto &csgobj : product.intersections) {
+// 			const Color4f &c = csgobj.leaf->color;
+// 				csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
+// 			
+// 			ColorMode colormode = ColorMode::NONE;
+// 			if (highlight_mode) {
+// 				colormode = ColorMode::HIGHLIGHT;
+// 			} else if (background_mode) {
+// 				colormode = ColorMode::BACKGROUND;
+// 			} else {
+// 				colormode = ColorMode::MATERIAL;
+// 			}
+// 			
+// 			glPushMatrix();
+// 			glMultMatrixd(csgobj.leaf->matrix.data());
+// 			
+// 			const Color4f c1 = setColor(colormode, c.data(), shaderinfo);
+// 			if (c1[3] == 1.0f) {
+// 				// object is opaque, draw normally
+// 				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
+// 			} else {
+// 				// object is transparent, so draw rear faces first.  Issue #1496
+// 				glEnable(GL_CULL_FACE);
+// 				glCullFace(GL_FRONT);
+// 				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
+// 				glCullFace(GL_BACK);
+// 				render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
+// 				glDisable(GL_CULL_FACE);
+// 			}
+// 
+// 			glPopMatrix();
+// 		}
+// 		for(const auto &csgobj : product.subtractions) {
+// 			const Color4f &c = csgobj.leaf->color;
+// 				csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
+// 			
+// 			ColorMode colormode = ColorMode::NONE;
+// 			if (highlight_mode) {
+// 				colormode = ColorMode::HIGHLIGHT;
+// 			} else if (background_mode) {
+// 				colormode = ColorMode::BACKGROUND;
+// 			} else {
+// 				colormode = ColorMode::CUTOUT;
+// 			}
+// 			
+// 			setColor(colormode, c.data(), shaderinfo);
+// 			glPushMatrix();
+// 			glMultMatrixd(csgobj.leaf->matrix.data());
+// 			// negative objects should only render rear faces
+// 			glEnable(GL_CULL_FACE);
+// 			glCullFace(GL_FRONT);
+// 			render_surface(csgobj.leaf->geom, csgmode, csgobj.leaf->matrix, shaderinfo);
+// 			glDisable(GL_CULL_FACE);
+// 			glPopMatrix();
+// 		}
+// 
+// 		if (shaderinfo) glUseProgram(0);
+// 		for(auto &p : primitives) delete p;
+// 		glDepthFunc(GL_LEQUAL);
+// 	}
+// #endif
 }
 
 BoundingBox OpenCSGRenderer::getBoundingBox() const

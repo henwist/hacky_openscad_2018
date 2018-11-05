@@ -27,6 +27,7 @@
 #include "ThrownTogetherRenderer.h"
 #include "polyset.h"
 #include "printutils.h"
+#include <QtGui/QOpenGLFunctions>
 
 #include "system-gl.h"
 
@@ -39,15 +40,17 @@ ThrownTogetherRenderer::ThrownTogetherRenderer(shared_ptr<CSGProducts> root_prod
 
 void ThrownTogetherRenderer::draw(bool /*showfaces*/, bool showedges) const
 {
+  QOpenGLFunctions *func = new QOpenGLFunctions();
+
 	PRINTD("Thrown draw");
  	if (this->root_products) {
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+		func->glEnable(GL_CULL_FACE);
+		func->glCullFace(GL_BACK);
 		renderCSGProducts(*this->root_products, false, false, showedges, false);
-		glCullFace(GL_FRONT);
+		func->glCullFace(GL_FRONT);
 		glColor3ub(255, 0, 255);
 		renderCSGProducts(*this->root_products, false, false, showedges, true);
-		glDisable(GL_CULL_FACE);
+		func->glDisable(GL_CULL_FACE);
 	}
 	if (this->background_products)
 	 	renderCSGProducts(*this->background_products, false, true, showedges, false);
@@ -58,6 +61,8 @@ void ThrownTogetherRenderer::draw(bool /*showfaces*/, bool showedges) const
 void ThrownTogetherRenderer::renderChainObject(const CSGChainObject &csgobj, bool highlight_mode,
 																							 bool background_mode, bool showedges, bool fberror, OpenSCADOperator type) const
 {
+  QOpenGLFunctions *func = new QOpenGLFunctions();
+
 	if (this->geomVisitMark[std::make_pair(csgobj.leaf->geom.get(), &csgobj.leaf->matrix)]++ > 0) return;
 	const Color4f &c = csgobj.leaf->color;
 	csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, type);
@@ -96,15 +101,15 @@ void ThrownTogetherRenderer::renderChainObject(const CSGChainObject &csgobj, boo
 	
 	const Transform3d &m = csgobj.leaf->matrix;
 	setColor(colormode, c.data());
-	glPushMatrix();
-	glMultMatrixd(m.data());
+	//func->glPushMatrix();
+	//func->glMultMatrixd(m.data());
 	render_surface(csgobj.leaf->geom, csgmode, m);
 	if (showedges) {
 		// FIXME? glColor4f((c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
 		setColor(edge_colormode);
 		render_edges(csgobj.leaf->geom, csgmode);
 	}
-	glPopMatrix();
+	//func->glPopMatrix();
 	
 }
 
@@ -112,8 +117,10 @@ void ThrownTogetherRenderer::renderCSGProducts(const CSGProducts &products, bool
 																							 bool background_mode, bool showedges, 
 																							 bool fberror) const
 {
+    QOpenGLFunctions *func = new QOpenGLFunctions();
+
 	PRINTD("Thrown renderCSGProducts");
-	glDepthFunc(GL_LEQUAL);
+	func->glDepthFunc(GL_LEQUAL);
 	this->geomVisitMark.clear();
 
 	for(const auto &product : products.products) {

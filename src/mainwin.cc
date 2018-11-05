@@ -1,3 +1,4 @@
+
 /*
  *  OpenSCAD (www.openscad.org)
  *  Copyright (C) 2009-2011 Clifford Wolf <clifford@clifford.at> and
@@ -68,7 +69,7 @@
 #ifdef OPENSCAD_UPDATER
 #include "AutoUpdater.h"
 #endif
-
+#include <QtGui/QGuiApplication>
 #include <QMenu>
 #include <QTime>
 #include <QMenuBar>
@@ -97,7 +98,7 @@
 #include <QSettings> //Include QSettings for direct operations on settings arrays
 #include "QSettingsCached.h"
 #include <QtMultimedia/QSound>
-
+#include <QtGui/QWindow>
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 #include <QTextDocument>
 #define QT_HTML_ESCAPE(qstring) Qt::escape(qstring)
@@ -158,14 +159,13 @@ MainWindow::MainWindow(const QString &filename)
 	editorDockTitleWidget = new QWidget();
 	consoleDockTitleWidget = new QWidget();
 	parameterDockTitleWidget = new QWidget();
-
-	this->editorDock->setConfigKey("view/hideEditor");
+        
+        this->editorDock->setConfigKey("view/hideEditor");
 	this->editorDock->setAction(this->viewActionHideEditor);
 	this->consoleDock->setConfigKey("view/hideConsole");
 	this->consoleDock->setAction(this->viewActionHideConsole);
 	this->parameterDock->setConfigKey("view/hideCustomizer");
 	this->parameterDock->setAction(this->viewActionHideParameters);
-
 	this->versionLabel = nullptr; // must be initialized before calling updateStatusBar()
 	updateStatusBar(nullptr);
 
@@ -390,8 +390,8 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->viewActionViewAll, SIGNAL(triggered()), this, SLOT(viewAll()));
 	connect(this->viewActionPerspective, SIGNAL(triggered()), this, SLOT(viewPerspective()));
 	connect(this->viewActionOrthogonal, SIGNAL(triggered()), this, SLOT(viewOrthogonal()));
-	connect(this->viewActionZoomIn, SIGNAL(triggered()), qglview, SLOT(ZoomIn()));
-	connect(this->viewActionZoomOut, SIGNAL(triggered()), qglview, SLOT(ZoomOut()));
+	connect(this->viewActionZoomIn, SIGNAL(triggered()), (QOpenGLWidget*)qglview, SLOT(ViewZoomIn()));
+	connect(this->viewActionZoomOut, SIGNAL(triggered()), (QOpenGLWidget*)qglview, SLOT(ViewZoomOut()));
 	connect(this->viewActionHideToolBars, SIGNAL(triggered()), this, SLOT(hideToolbars()));
 	connect(this->viewActionHideEditor, SIGNAL(triggered()), this, SLOT(hideEditor()));
 	connect(this->viewActionHideConsole, SIGNAL(triggered()), this, SLOT(hideConsole()));
@@ -425,9 +425,9 @@ MainWindow::MainWindow(const QString &filename)
 	connect(editor, SIGNAL(contentsChanged()), this, SLOT(animateUpdateDocChanged()));
 	connect(editor, SIGNAL(contentsChanged()), this, SLOT(setContentsChanged()));
 	connect(editor, SIGNAL(modificationChanged(bool)), this, SLOT(setWindowModified(bool)));
-	connect(this->qglview, SIGNAL(doAnimateUpdate()), this, SLOT(animateUpdate()));
+	connect((QOpenGLWidget*)this->qglview, SIGNAL(doAnimateUpdate()), this, SLOT(animateUpdate()));
 
-	connect(Preferences::inst(), SIGNAL(requestRedraw()), this->qglview, SLOT(updateGL()));
+	connect(Preferences::inst(), SIGNAL(requestRedraw()),(QOpenGLWidget*)this->qglview, SLOT(updateGL()));
 	connect(Preferences::inst(), SIGNAL(updateMdiMode(bool)), this, SLOT(updateMdiMode(bool)));
 	connect(Preferences::inst(), SIGNAL(updateReorderMode(bool)), this, SLOT(updateReorderMode(bool)));
 	connect(Preferences::inst(), SIGNAL(updateUndockMode(bool)), this, SLOT(updateUndockMode(bool)));
@@ -551,13 +551,41 @@ MainWindow::MainWindow(const QString &filename)
 		}
 #endif	    
 	}
-	
+
 	connect(this->editorDock, SIGNAL(topLevelChanged(bool)), this, SLOT(editorTopLevelChanged(bool)));
 	connect(this->consoleDock, SIGNAL(topLevelChanged(bool)), this, SLOT(consoleTopLevelChanged(bool)));
 	connect(this->parameterDock, SIGNAL(topLevelChanged(bool)), this, SLOT(parameterTopLevelChanged(bool)));
 	// display this window and check for OpenGL 2.0 (OpenCSG) support
 	viewModeThrownTogether();
 	show();
+/*
+   QSurfaceFormat fmt;
+   fmt.setVersion(2,0);
+   fmt.setDepthBufferSize(24);
+   fmt.setStencilBufferSize(8);
+   fmt.setProfile(QSurfaceFormat::NoProfile);
+   fmt.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES);
+   fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+*/
+//   this->setFormat(fmt);
+
+//   QSurfaceFormat::setDefaultFormat(fmt);
+
+//	QWindow *qw = nullptr;
+//        qw = qobject_cast<QWindow*>((QWindow*)this); //QGuiApplication::focusWindow();
+
+//        qw->setSurfaceType(QWindow::OpenGLSurface);
+
+
+//        qw = QApplication::focusWindow();
+
+//        qw->setSurfaceType(QWindow::OpenGLSurface);
+
+//        QWidget *wg = QApplication::activeWindow();
+
+//        qw = qobject_cast<QWindow*>(wg);
+
+//        qw->setSurfaceType(QWindow::OpenGLSurface);
 
 #ifdef ENABLE_OPENCSG
 	viewModePreview();
@@ -2502,13 +2530,13 @@ void MainWindow::viewOrthogonal()
 
 void MainWindow::viewResetView()
 {
-	this->qglview->resetView();
+	this->qglview->ResetView();
 	this->qglview->updateGL();
 }
 
 void MainWindow::viewAll()
 {
-	this->qglview->viewAll();
+	this->qglview->ViewAll();
 	this->qglview->updateGL();
 }
 

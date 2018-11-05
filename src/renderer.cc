@@ -46,6 +46,10 @@ Renderer::Renderer() : colorscheme(nullptr)
 
 void Renderer::setColor(const float color[4], GLint *shaderinfo) const
 {
+        QOpenGLFunctions *func = new QOpenGLFunctions();
+
+        func->initializeOpenGLFunctions();
+
 	PRINTD("setColor a");
 	Color4f col;
 	getColor(ColorMode::MATERIAL,col);
@@ -57,8 +61,8 @@ void Renderer::setColor(const float color[4], GLint *shaderinfo) const
 	glColor4fv(c);
 #ifdef ENABLE_OPENCSG
 	if (shaderinfo) {
-		glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
-		glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
+		 func->glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
+		 func->glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
 	}
 #endif
 }

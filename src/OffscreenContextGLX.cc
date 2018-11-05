@@ -41,8 +41,10 @@ OffscreenContext.mm (Mac OSX version)
 #include "system-gl.h"
 #include "fbo.h"
 
-#include <GL/gl.h>
-#include <GL/glx.h>
+//#include <GL/gl.h>
+//#include <GL/glx.h>
+#include <QtGui/qopengl.h>
+#include <QtPlatformHeaders/qglxnativecontext.h>
 
 #include <assert.h>
 #include <sstream>

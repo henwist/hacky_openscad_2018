@@ -32,9 +32,9 @@ public:
   
   virtual void ViewAll()=0;
   
-  virtual void ZoomIn()=0;
+  virtual void ViewZoomIn()=0;
   
-  virtual void ZoomOut()=0;
+  virtual void ViewZoomOut()=0;
   
   virtual void ResetView()=0;
  

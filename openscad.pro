@@ -103,7 +103,7 @@ mingw* {
 }
 
 CONFIG += qt
-QT += widgets concurrent opengl
+QT += widgets concurrent opengl multimedia
 
 netbsd* {
    QMAKE_LFLAGS += -L/usr/X11R7/lib
@@ -590,10 +590,18 @@ win* {
   SOURCES += src/PlatformUtils-win.cc
 }
 
+#View interface needed code
+HEADERS += src/Interface/openglshader.hpp \
+
+SOURCES += src/Interface/openglshader.cpp \
+
+
+
+
 isEmpty(PREFIX):PREFIX = /usr/local
 
 target.path = $$PREFIX/bin/
-INSTALLS += target
+INSTALLS += target \
 
 # Run translation update scripts as last step after linking the target
 QMAKE_POST_LINK += "$$PWD/scripts/translation-make.sh"

@@ -24,8 +24,10 @@ Some actions (showCrossHairs) only work properly on Gimbal Camera.
 #include <iostream>
 #include "Camera.h"
 #include "colormap.h"
+#include <QtGui/QOpenGLFunctions>
+#include "Interface/openglshader.hpp"
 
-class GLView
+class GLView : virtual protected QOpenGLFunctions
 {
 public:
 	GLView();
@@ -46,6 +48,9 @@ public:
 	virtual bool save(const char *filename) = 0;
 	virtual std::string getRendererInfo() const = 0;
 	virtual float getDPI() { return 1.0f; }
+
+	void printShaderLog(GLuint shaderId, GLuint shaderType);
+	void printProgramLog(GLuint programId);
 
 	Renderer *renderer;
 	const ColorScheme *colorscheme;
@@ -76,4 +81,6 @@ private:
 	void showSmallaxes(const Color4f &col);
 	void showScalemarkers(const Color4f &col);
 	void decodeMarkerValue(double i, double l, int size_div_sm);
+
+        openglprogram glprog;
 };
