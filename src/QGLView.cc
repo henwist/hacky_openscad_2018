@@ -320,7 +320,7 @@ void View::resizeGL(int w, int h)
   
 void View::paintGL()
 {
-  //GLView::paintGL();
+  GLView::paintGL();
 
   static bool isInitialized = false;
 

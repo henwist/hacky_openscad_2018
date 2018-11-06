@@ -189,7 +189,7 @@ void GLView::paintGL()
   glDisable(GL_CULL_FACE);
   glLineWidth(2);
   glColor3d(1.0, 0.0, 0.0);
-
+*/
   if (this->renderer) {
 #if defined(ENABLE_OPENCSG)
     // FIXME: This belongs in the OpenCSG renderer, but it doesn't know about this ID yet
@@ -197,7 +197,7 @@ void GLView::paintGL()
 #endif
     this->renderer->draw(showfaces, showedges);
   }
-
+/*
   // Only for GIMBAL
   glDisable(GL_LIGHTING);
   if (showaxes) GLView::showSmallaxes(axescolor);
