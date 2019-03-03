@@ -28,13 +28,18 @@
 
   //used for setting the axis of rotation
   #define XAXIS 0
-  #define YAXIS 0
+  #define YAXIS 1
   #define ZAXIS 1
 
   //rotate the axis in this speed.
   #define ROT_SPEED 0.05
   #define ZOOM_FACTOR 5 
 
+  //max size of array that OpenGLES2 can hande on raspberry Pi3
+  //yes 65535 % 12 is not 0 -> thus 65544 - 12 is 65532, is 65532 % 12 = 0. 
+  //Remember we have nine GLfloat per triangle and maxsize for unsigned short is 65535
+  //before it overflows
+  #define MAX_ARRAY_SIZE_OPENGLES2 65532
 
 #include "Interface/IView.h"
 #include "Interface/IComponent.h"
@@ -51,7 +56,14 @@
 #include <QLabel>
 
 #include "GLView.h"
-
+#include "Geometry.h"
+#include "polyset.h"
+#include "CGAL_Nef_polyhedron.h"
+#include "cgalutils.h"
+#include "polyset-utils.h"
+#include <algorithm>
+#include <sstream>
+#include "/usr/include/eigen3/Eigen/src/Core/IO.h"
 #define USE_QOPENGLWIDGET
 
 
@@ -70,6 +82,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/ext.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/Dense>
+
 
 #include <string>
 #include <fstream>
@@ -180,10 +198,10 @@ class View: public QOpenGLWidget, public IView, public GLView, virtual protected
 	Q_PROPERTY(bool orthoMode READ orthoMode WRITE setOrthoMode);
 	Q_PROPERTY(double showScaleProportional READ showScaleProportional WRITE setShowScaleProportional);
 
-  
+
 public:
   View(QWidget *parent = nullptr);
-  
+   
   ~View();
   
 //From QOpenGLWidget
@@ -248,6 +266,7 @@ public:
   void ViewWireframe() override;
  
   void Teardown() override;
+
   
 private:
   void InitOpenGLProgram();
@@ -271,6 +290,7 @@ float farClippingPlane = 1000.0f;
 float angle = 0.0f;
 float scale = 1.0;
 float* alpha;
+bool mouse_drag_active;
 
 openglprogram program;
 
@@ -307,8 +327,59 @@ private:
   void initMatrices();
   void setupCamera(); 
 
+  //store vertices information for OpenGL rendering
+  void storeVertices(std::vector<GLfloat>* locVertices, const Transform3d &m)
+  {
+    struct ObjectVertices* objVertices = new struct ObjectVertices();
+    objVertices->m_ptr = locVertices->data();
+    objVertices->m_size  = locVertices->size();
+    objVertices->m_m  = glm::make_mat4(m.data());
+    
+    objectVertices3d.push_back(objVertices); 
+  } 
 
+  void storeNormals(std::vector<GLfloat>* locVertices)
+  {
+    struct ObjectVertices* objVertices = new struct ObjectVertices();
+    struct std::vector<GLfloat>* localNormals = new std::vector<GLfloat>();
 
+    std::vector<GLfloat>::iterator it;
+    //compute normals for every triangle; every twelve floats represent one triangle (three vertices á four GLfloats each)
+    assert(locVertices->size() % 12 == 0); //we want to have twelve floats for every triangle. 
+    for(it=locVertices->begin(); it != locVertices->end(); it++)
+    {
+      glm::vec3 v1(*it, *++it, *++it);
+      ++it; //skip every fourth value as the next vertex begins on pos 0, 4, 8, 12, ...
+      glm::vec3 v2(*++it, *++it, *++it);
+      ++it;
+      glm::vec3 v3(*++it, *++it, *++it);
+      ++it;
+      
+      glm::vec3 normal = glm::normalize(glm::cross(v2 - v1, v3 - v1));
+      
+      //all normals are the same values due to they belong to the same triangle:
+      //normal for first vertex
+      localNormals->push_back(normal[0]);
+      localNormals->push_back(normal[1]);
+      localNormals->push_back(normal[2]);
+      
+      //normal for second vertex
+      localNormals->push_back(normal[0]);
+      localNormals->push_back(normal[1]);
+      localNormals->push_back(normal[2]);
+
+      //normal for third vertex
+      localNormals->push_back(normal[0]);
+      localNormals->push_back(normal[1]);
+      localNormals->push_back(normal[2]);
+    }
+    
+    
+    objVertices->m_ptr = localNormals->data();
+    objVertices->m_size = localNormals->size();
+    
+    objectNormals3d.push_back(objVertices);
+  }
 
 
 //from OpenGLWindow
@@ -317,14 +388,35 @@ public:
     void initialize();
     void render();
 
+public:
+    static View* m_viewInstance;
+
 private:
     GLuint m_posAttr;
     GLuint m_colAttr;
     GLuint m_matrixUniform;
 
     QMatrix4x4 matrix;
-    GLfloat *vertices;
+    
     GLfloat *colors;
+    GLfloat *vertices;
+    unsigned int vertices_count;
+
+    struct ObjectVertices
+    {
+      GLfloat* m_ptr;
+      unsigned short m_size;
+      glm::mat4 m_m; //models matrix for local vertices
+
+      ObjectVertices(): 
+      m_ptr(nullptr),
+      m_size(0),
+      m_m(glm::mat4(1.0))
+      { }
+    };
+
+    std::vector<struct ObjectVertices*> objectVertices3d;
+    std::vector<struct ObjectVertices*> objectNormals3d;
 
     QOpenGLShaderProgram *m_program;
     int m_frame;
@@ -366,12 +458,16 @@ public:
 	
 	const QImage & grabFrame();
 	bool save(const char *filename) override;
+        void clearVertices();
+        void setVertices(shared_ptr<const Geometry> root_geom, const Transform3d &m, bool clVerts);
 
 public slots:
 	void ZoomIn(void);
 	void ZoomOut(void);
+        void setVertices(shared_ptr<const Geometry> root_geom);
+
 #ifdef USE_QOPENGLWIDGET
-	inline void updateGL() { update(); }
+	void updateGL() { update(); }
 #endif
 
 public:
@@ -400,4 +496,3 @@ signals:
 	void doAnimateUpdate();
 
 };
-

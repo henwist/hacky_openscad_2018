@@ -1,12 +1,5 @@
 
 /*
- *  OpenSCAD (www.openscad.org)
- *  Copyright (C) 2009-2011 Clifford Wolf <clifford@clifford.at> and
- *                          Marius Kintel <marius@kintel.net>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
  *  As a special exception, you have permission to link this program
@@ -20,10 +13,8 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- */
+ *  along with this program; if not, write to the Free Software*/
+#include "polyset-utils.h"
 #include <iostream>
 #include "comment.h"
 #include "openscad.h"
@@ -135,7 +126,9 @@
 #endif // ENABLE_CGAL
 
 #include "FontCache.h"
-
+#include <algorithm>
+#include <sstream>
+#include "/usr/include/eigen3/Eigen/src/Core/IO.h"
 // Global application state
 unsigned int GuiLocker::gui_locked = 0;
 
@@ -206,6 +199,10 @@ MainWindow::MainWindow(const QString &filename)
 	this->cgalworker = new CGALWorker();
 	connect(this->cgalworker, SIGNAL(done(shared_ptr<const Geometry>)), 
 					this, SLOT(actionRenderDone(shared_ptr<const Geometry>)));
+	connect(this->cgalworker, SIGNAL(done(shared_ptr<const Geometry>)), 
+					this, SLOT(actionRenderOGL(shared_ptr<const Geometry>)));
+  connect(this->cgalworker, SIGNAL(done(shared_ptr<const Geometry>)), 
+					this->qglview, SLOT(setVertices(shared_ptr<const Geometry>)));
 #endif
 
 	root_module = nullptr;
@@ -2021,7 +2018,7 @@ void MainWindow::actionRenderDone(shared_ptr<const Geometry> root_geom)
 		PRINT("Rendering finished.");
 
 		this->root_geom = root_geom;
-		this->cgalRenderer = new CGALRenderer(root_geom);
+		//this->cgalRenderer = new CGALRenderer(root_geom); //hw , 2019-02-23 removed this as we now use qglview with OpenGLES2 instead and we do the same calc in there.
 		// Go to CGAL view mode
 		if (viewActionWireframe->isChecked()) viewModeWireframe();
 		else viewModeSurface();
@@ -2039,6 +2036,81 @@ void MainWindow::actionRenderDone(shared_ptr<const Geometry> root_geom)
 
 	this->contentschanged = false;
 	compileEnded();
+}
+
+#define OSS_NOT_HERE(X) static_cast<std::ostringstream &&>(std::ostringstream() << X).str()
+
+namespace {
+  std::string toString(const Vector3d &v)
+{
+	return OSS_NOT_HERE(v[0] << " " << v[1] << " " << v[2]);
+}
+
+Vector3d fromString(const std::string &vertexString)
+{
+	Vector3d v;
+	std::istringstream stream{vertexString};
+	stream >> v[0] >> v[1] >> v[2];
+	return v;
+}
+
+}
+
+void MainWindow::actionRenderOGL(shared_ptr<const Geometry> root_geom)
+{
+  /*Set ps(3);
+  
+	if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom.get())) {
+    if (!N->p3->is_simple())
+      PRINT("WARNING: Exported object may not be a valid 2-manifold and may need repair : actionRenderOGL");
+    
+    if (!CGALUtils::createPolySetFromNefPolyhedron3(*(N->p3), ps))
+      goto CONT_RENDER;
+	}
+	else if (const PolySet *pse = dynamic_cast<const PolySet *>(root_geom.get())) {
+		ps = (PolySet)*pse;
+    goto CONT_RENDER;
+	}
+	else if (dynamic_cast<const Polygon2d *>(root_geom.get())) {
+		assert(false && "Unsupported dimension 2D");
+	}
+	else {
+		PRINT("ERROR: Nef->PolySet failed in : actionRenderOGL");
+    return;
+	}
+	
+	
+	
+CONT_RENDER:	
+	
+  PolySet triangulated(3);
+	PolysetUtils::tessellate_faces(ps, triangulated);
+std::cout << std::endl << std::endl << std::endl << "Start of actionRenderOGL output: " << std::endl;
+	for(const auto &p : triangulated.polygons) {
+		assert(p.size() == 3); // STL only allows triangles
+		std::array<std::string, 3> vertexStrings;
+		std::transform(p.cbegin(), p.cend(), vertexStrings.begin(), toString);
+
+		Vector3d p0 = fromString(vertexStrings[0]);
+		Vector3d p1 = fromString(vertexStrings[1]);
+		Vector3d p2 = fromString(vertexStrings[2]);
+
+                  // precision           flags  coeffSep  rowSep rowPre  rowSuff matPre  matSuff //
+Eigen::IOFormat fmt(Eigen::StreamPrecision, 0,   "",      " ",     "",    "",      "",    "");
+
+                                        std::stringstream ss;
+                                        ss << p0(0,0) << std::endl; //.format(fmt) << std::endl;
+                                        ss << p1.format(fmt) << std::endl;// << " ";
+                                        ss << p2.format(fmt) << std::endl;// << " ";
+                                        ss << p0.format(fmt) << std::endl << std::endl << std::endl;
+                                        std::string s = ss.str();
+                                        ss.str(s);
+                                        std::cout << ss.str();// << std::endl << std::endl;
+
+//		std::cout << p0 << " " << p1 << " " << p2 << std::endl;
+			
+	}
+*/
 }
 
 #endif /* ENABLE_CGAL */

@@ -5,6 +5,7 @@
 #include "grid.h"
 #include <Eigen/LU>
 #include <QtCore/QDebug>
+#include <iostream>
 
 // all GL functions grouped together here
 
@@ -14,8 +15,11 @@ static void draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector3d 
 {
   bool test = true;
   if(test)
-    qDebug() << "test succeded";
+    qDebug() << "test succeded in: ";
   
+  std::cout  << __PRETTY_FUNCTION__ << std::endl;
+  
+/*
 // 	glVertexAttrib3d(shaderinfo[3], e0f, e1f, e2f);
 // 	glVertexAttrib3d(shaderinfo[4], p1[0], p1[1], p1[2] + z);
 // 	glVertexAttrib3d(shaderinfo[5], p2[0], p2[1], p2[2] + z);
@@ -39,7 +43,7 @@ static void draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector3d 
 // 		glVertexAttrib3d(shaderinfo[5], p2[0], p2[1], p2[2] + z);
 // 		glVertexAttrib3d(shaderinfo[6], 0.0, 0.0, 1.0);
  		glVertex3d(p1[0], p1[1], p1[2] + z);
- 	}
+ 	}*/
 }
 #endif
 
@@ -47,12 +51,17 @@ static void draw_tri(const Vector3d &p0, const Vector3d &p1, const Vector3d &p2,
 {
   bool test = true;
   if(test)
-    qDebug() << "test succeded";
+    qDebug() << "test succeded in:";
 
+  std::cout  << __PRETTY_FUNCTION__ << std::endl;
+
+
+/*
 	glVertex3d(p0[0], p0[1], p0[2] + z);
 	if (!mirror) glVertex3d(p1[0], p1[1], p1[2] + z);
 	glVertex3d(p2[0], p2[1], p2[2] + z);
 	if (mirror) glVertex3d(p1[0], p1[1], p1[2] + z);
+*/
 }
 
 #ifndef NULLGL
@@ -60,8 +69,11 @@ static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector
 {
   bool test = true;
   if(test)
-    qDebug() << "test succeded";
+    qDebug() << "test succeded in: ";
 
+  std::cout  << __PRETTY_FUNCTION__ << std::endl;
+
+/*
  	double ax = p1[0] - p0[0], bx = p1[0] - p2[0];
  	double ay = p1[1] - p0[1], by = p1[1] - p2[1];
  	double az = p1[2] - p0[2], bz = p1[2] - p2[2];
@@ -69,7 +81,7 @@ static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector
  	double ny = az*bx - ax*bz;
  	double nz = ax*by - ay*bx;
  	double nl = sqrt(nx*nx + ny*ny + nz*nz);
- 	glNormal3d(nx / nl, ny / nl, nz / nl);
+ 	//glNormal3d(nx / nl, ny / nl, nz / nl);
  #ifdef ENABLE_OPENCSG
  	if (shaderinfo) {
  		double e0f = e0 ? 2.0 : -1.0;
@@ -81,15 +93,18 @@ static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector
  #endif
  	{
  		draw_tri(p0, p1, p2, z, mirrored);
- 	}
+ 	}*/
 }
 
 void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, GLint *shaderinfo) const
 {
   bool test = true;
   if(test)
-    qDebug() << "test succeded";
+    qDebug() << "test succeded in: ";
 
+  std::cout  << __PRETTY_FUNCTION__ << std::endl;
+
+/*
  	PRINTD("Polyset render");
  	bool mirrored = m.matrix().determinant() < 0;
 // #ifdef ENABLE_OPENCSG
@@ -97,7 +112,7 @@ void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, 
 // 		glUniform1f(shaderinfo[7], shaderinfo[9]);
 // 		glUniform1f(shaderinfo[8], shaderinfo[10]);
 // 	}
-// #endif /* ENABLE_OPENCSG */
+// #endif // ENABLE_OPENCSG 
  	if (this->dim == 2) {
  		// Render 2D objects 1mm thick, but differences slightly larger
  		double zbase = 1 + ((csgmode & CSGMODE_DIFFERENCE_FLAG) ? 0.1 : 0);
@@ -204,7 +219,7 @@ void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, 
  	}
  	else {
  		assert(false && "Cannot render object with no dimension");
- 	}
+ 	}*/
 }
 
 /*! This is used in throwntogether and CGAL mode
@@ -217,7 +232,10 @@ void PolySet::render_edges(Renderer::csgmode_e csgmode) const
 {
   bool test = true;
   if(test)
-    qDebug() << "test succeded";
+    qDebug() << "test succeded in: ";
+
+  std::cout  << __PRETTY_FUNCTION__ << std::endl;
+
 
 // 	glDisable(GL_LIGHTING);
 // 	if (this->dim == 2) {

@@ -148,13 +148,13 @@ bool create_glx_dummy_window(OffscreenContext &ctx)
 	auto dpy = ctx.xdisplay;
 
 	int num_returned = 0;
-	auto fbconfigs = glXChooseFBConfig( dpy, DefaultScreen(dpy), attributes, &num_returned );
+	auto fbconfigs = nullptr;//glXChooseFBConfig( dpy, DefaultScreen(dpy), attributes, &num_returned );
 	if (fbconfigs == nullptr) {
 		std::cerr << "glXChooseFBConfig failed\n";
 		return false;
 	}
 
-	auto visinfo = glXGetVisualFromFBConfig( dpy, fbconfigs[0] );
+	auto visinfo = nullptr; //glXGetVisualFromFBConfig( dpy, fbconfigs[0] );
 	if (visinfo == nullptr) {
 		std::cerr << "glXGetVisualFromFBConfig failed\n";
 		XFree(fbconfigs);
@@ -162,7 +162,7 @@ bool create_glx_dummy_window(OffscreenContext &ctx)
 	}
 
 	// can't depend on xWin==nullptr at failure. use a custom Xlib error handler instead.
-	original_xlib_handler = XSetErrorHandler(XCreateWindow_error);
+	/*original_xlib_handler = XSetErrorHandler(XCreateWindow_error);
 
 	auto root = DefaultRootWindow(dpy);
 	XSetWindowAttributes xwin_attr;
@@ -192,7 +192,7 @@ bool create_glx_dummy_window(OffscreenContext &ctx)
 	// Most programs would call XMapWindow here. But we don't, to keep the window hidden
 	// XMapWindow( dpy, xWin );
 
-	auto context = glXCreateNewContext(dpy, fbconfigs[0], GLX_RGBA_TYPE, nullptr, true);
+	auto context = nullptr; //glXCreateNewContext(dpy, fbconfigs[0], GLX_RGBA_TYPE, nullptr, true);
 	if (context == nullptr) {
 		std::cerr << "glXCreateNewContext failed\n";
 		XDestroyWindow(dpy, xWin);
@@ -218,7 +218,7 @@ bool create_glx_dummy_window(OffscreenContext &ctx)
 
 	XFree(visinfo);
 	XFree(fbconfigs);
-
+*/
 	return true;
 }
 
@@ -254,7 +254,7 @@ bool teardown_offscreen_context(OffscreenContext *ctx)
 
 bool save_framebuffer(OffscreenContext *ctx, std::ostream &output)
 {
-	glXSwapBuffers(ctx->xdisplay, ctx->xwindow);
+	//glXSwapBuffers(ctx->xdisplay, ctx->xwindow);
 	return save_framebuffer_common(ctx, output);
 }
 

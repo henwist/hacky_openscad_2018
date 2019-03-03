@@ -109,9 +109,9 @@ void GLView::setupCamera()
 		}
 		case Camera::ProjectionType::ORTHOGONAL: {
 			auto height = dist * tan(cam.fov/2*M_PI/180);
-			glOrtho(-height*aspectratio, height*aspectratio,
-							-height, height,
-							-100*dist, +100*dist);
+			//glOrtho(-height*aspectratio, height*aspectratio,
+			//				-height, height,
+			//				-100*dist, +100*dist);
 			break;
 		}
 		}
@@ -134,9 +134,9 @@ void GLView::setupCamera()
 		}
 		case Camera::ProjectionType::ORTHOGONAL: {
 			auto height = dist * tan(cam.fov/2*M_PI/180);
-			glOrtho(-height*aspectratio, height*aspectratio,
-							-height, height,
-							-100*dist, +100*dist);
+			//glOrtho(-height*aspectratio, height*aspectratio,
+			//				-height, height,
+			//				-100*dist, +100*dist);
 			break;
 		}
 		}
@@ -320,9 +320,9 @@ void GLView::showSmallaxes(const Color4f &col)
    glLoadIdentity();
  	glTranslatef(-0.8f, -0.8f, 0.0f);
  	auto scale = 90;
-   glOrtho(-scale*dpi*aspectratio,scale*dpi*aspectratio,
- 					-scale*dpi,scale*dpi,
- 					-scale*dpi,scale*dpi);
+   //glOrtho(-scale*dpi*aspectratio,scale*dpi*aspectratio,
+ //					-scale*dpi,scale*dpi,
+ //					-scale*dpi,scale*dpi);
    gluLookAt(0.0, -1.0, 0.0,
  						0.0, 0.0, 0.0,
  						0.0, 0.0, 1.0);
@@ -367,7 +367,7 @@ void GLView::showSmallaxes(const Color4f &col)
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
    glTranslated(-1, -1, 0);
-   glScaled(2.0/viewport[2], 2.0/viewport[3], 1);
+   //glScaled(2.0/viewport[2], 2.0/viewport[3], 1);
  
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
@@ -411,9 +411,9 @@ void GLView::showAxes(const Color4f &col)
    glVertex3d(0, 0, +l);
    glEnd();
  
-   glPushAttrib(GL_LINE_BIT);
+   //glPushAttrib(GL_LINE_BIT);
    glEnable(GL_LINE_STIPPLE);
-   glLineStipple(3, 0xAAAA);
+   //glLineStipple(3, 0xAAAA);
    glBegin(GL_LINES);
    glVertex3d(0, 0, 0);
    glVertex3d(-l, 0, 0);
@@ -422,7 +422,7 @@ void GLView::showAxes(const Color4f &col)
    glVertex3d(0, 0, 0);
    glVertex3d(0, 0, -l);
    glEnd();
-   glPopAttrib();
+   //glPopAttrib();
 }
 
 void GLView::showCrosshairs()
@@ -517,9 +517,9 @@ void GLView::showScalemarkers(const Color4f &col)
  		glEnd();
  
  		// negative axes
- 		glPushAttrib(GL_LINE_BIT);
+ 		//glPushAttrib(GL_LINE_BIT);
  		glEnable(GL_LINE_STIPPLE);
- 		glLineStipple(3, 0xAAAA);
+ 		//glLineStipple(3, 0xAAAA);
  		glBegin(GL_LINES);
  		// x
  		glVertex3d(-i,0,0); glVertex3d(-i,-l/size_div,0); // 1 arm
@@ -536,7 +536,7 @@ void GLView::showScalemarkers(const Color4f &col)
  		//glVertex3d(-l/size_div,0,-i); glVertex3d(l/size_div,0,-i); // 2 arms
  		//glVertex3d(0,-l/size_div,-i); glVertex3d(0,l/size_div,-i); // 4 arms (w/ 2 arms line)
  		glEnd();
- 		glPopAttrib();
+ 		//glPopAttrib();
  	}
 }
 

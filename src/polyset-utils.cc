@@ -8,7 +8,9 @@
 #ifdef ENABLE_CGAL
 #include "cgalutils.h"
 #endif
-
+#include <algorithm>
+#include <sstream>
+#include "/usr/include/eigen3/Eigen/src/Core/IO.h"
 namespace PolysetUtils {
 
 	// Project all polygons (also back-facing) into a Polygon2d instance.
@@ -95,7 +97,46 @@ namespace PolysetUtils {
 					outps.append_vertex(verts[t[0]]);
 					outps.append_vertex(verts[t[1]]);
 					outps.append_vertex(verts[t[2]]);
+
+   		        	        //int every_three = 0;
+                  /* precision           flags  coeffSep  rowSep rowPre  rowSuff matPre  matSuff */
+//Eigen::IOFormat fmt(Eigen::StreamPrecision, 0,   "",      " ",     "",    "",      "",    "");
+
+                                        //std::stringstream ss;
+                                        //ss << verts[t[0]].format(fmt) << std::endl;
+ 				        //ss << verts[t[1]].format(fmt) << std::endl;// << " ";
+				        //ss << verts[t[2]].format(fmt) << std::endl;// << " ";
+				        //ss << verts[t[0]].format(fmt) << std::endl << std::endl << std::endl;
+				       	//std::string s = ss.str();
+                                        //std::replace(s.begin(), s.end() - 3, '\n', ' ');
+ 
+ 					/*for(std::string::iterator it = s.begin(); it != s.end(); it++)
+ 					{
+  					  if(*it == '\n')
+   					  {
+       					    every_three++;
+
+					    if(every_three % 3 == 0)
+ 					    {
+					      //\*it = ' ';
+  					      every_three = 0;
+  				            }
+   	 				  }
+					}
+					*/
+  					//ss.str(s);
+					//std::cout << ss.str();// << std::endl << std::endl;
+				       
+				        /*std::cout << verts[t[0]] << " ";
+				        std::cout << verts[t[1]] << " ";
+				        std::cout << verts[t[2]] << " ";
+				        std::cout << verts[t[0]] << std::endl << std::endl;
+					*/
+
+
 				}
+				       // std::cout << std::endl << std::endl << std::endl << std::endl; 
+
 			}
 		}
 		if (degeneratePolygons > 0) PRINT("WARNING: PolySet has degenerate polygons");

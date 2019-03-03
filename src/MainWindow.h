@@ -183,6 +183,7 @@ private slots:
 	void actionRender();
 	void actionRenderDone(shared_ptr<const class Geometry>);
 	void cgalRender();
+        void actionRenderOGL(shared_ptr<const class Geometry>);
 #endif
 	void actionCheckValidity();
 	void actionDisplayAST();
@@ -198,7 +199,6 @@ private slots:
 	void actionExportImage();
 	void actionCopyViewport();
 	void actionFlushCaches();
-
 public:
 	void viewModeActionsUncheck();
 	void setCurrentOutput();
@@ -306,3 +306,4 @@ public:
 private:
  	static unsigned int gui_locked;
 };
+

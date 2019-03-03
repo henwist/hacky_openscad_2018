@@ -9,6 +9,8 @@
 #  include <opencsg.h>
 #endif
 
+#define DEBUG_SETVERTICES 0
+
 
 OpenGLWindow::OpenGLWindow(QWindow *parent)
     : QWindow(parent)
@@ -227,21 +229,30 @@ void View::render()
 
 
 
-
-
-
-
-
-
-
-
 View::View(QWidget *parent):
   QOpenGLWidget(parent),
   m_program(0),
-  m_frame(0)
+  m_frame(0),
+  vertices(nullptr),
+  vertices_count(0)
 {
   this->parent = parent;
   e_matrix = glm::mat4(1.0);
+  this->mouse_drag_active = false;
+
+  m_viewInstance = this;
+
+   //seems not working all right: setSamles(4)- so anti-aliasing how to do that? //hw 2019-02-22
+   QSurfaceFormat fmt;
+   fmt.setVersion(2,0);
+   //fmt.setDepthBufferSize(24);
+   //fmt.setStencilBufferSize(8);
+   //fmt.setProfile(QSurfaceFormat::NoProfile);
+   //fmt.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES);
+   fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+   fmt.setSamples(4);
+   this->setFormat(fmt);
+   this->makeCurrent();
 /*
    QSurfaceFormat fmt;
    fmt.setVersion(2,0);
@@ -275,6 +286,7 @@ void View::initializeGL()
   this->init(); //old rotatingWheel
   this->initMatrices(); //...
 
+ 
 /*
    m_context = new QOpenGLContext();
    m_context->setFormat(fmt);
@@ -323,7 +335,6 @@ void View::paintGL()
   GLView::paintGL();
 
   static bool isInitialized = false;
-
   //oglw.render();
   //this->render();
 
@@ -355,13 +366,8 @@ bool valid = ctx->isValid();
 
   //configure matrices - rotation matrix.
   myRotationAxis = glm::vec3(XAXIS, YAXIS, ZAXIS);
-  rotMatrix = e_matrix;/*glm::rotate( e_matrix, angle += 0.02f, myRotationAxis );*/
+  rotMatrix = e_matrix * glm::rotate( e_matrix, angle, myRotationAxis );
   program.configure_mat4(UNILOC_ROTMATRIX, rotMatrix);
-
-  //configure matrices - model matrix.
-  m = e_matrix;
-  scaleM = glm::scale(e_matrix, glm::vec3(scale, scale, scale)); 
-  program.change_mat4(UNILOC_M , scaleM * m);
 
   // 	//configure matrices - view matrix.
   program.configure_mat4(UNILOC_V, this->getViewMatrix());
@@ -384,24 +390,52 @@ bool valid = ctx->isValid();
   program.change_float(UNILOC_ALPHA, 1.0);
 
     static const GLfloat verts[] = {
-       -0.5f,  -0.5f, 0.0f, 1.0f,
-        0.5f,  -0.5f, 0.0f, 1.0f,
-        0.5f,   0.5f, 0.0f, 1.0f
+       -0.5f,  -0.5f, 0.0f, //1.0f,
+        0.25f,  -0.5f, 0.0f, //1.0f,
+        0.5f,   0.5f, 0.0f,//, 1.0f
+  //     -0.5f,  -0.5f, 0.0f, //1.0f,
+//        0.5f,   0.5f, 0.0f,//, 1.0f
+       -0.5f,   0.5f, 0.0f
     };
 
-   static const unsigned short indices[] = { 0, 1, 2 };
+  // static const unsigned short indices[] = { 0, 1, 2, 0, 2, 3 };
 
-     const GLuint count_total_indices = 3;
+    // const GLuint count_total_indices = 6;
 
   //configure arributes
-  program.configure_attributes(ATTRIB_VERTEX, &verts[0], 4);
+  //if(vertices != nullptr)
+    //program.configure_attributes(ATTRIB_VERTEX, &vertices[0], 3);
 //  program.configure_attributes(ATTRIB_NORMAL, model.getNormalData(0),       3);
 
-  //glDrawElements(GL_TRIANGLES,count_total_indices, GL_UNSIGNED_SHORT, (const GLvoid*)indices);
+    //glDrawElements(GL_TRIANGLES,count_total_indices, GL_UNSIGNED_SHORT, (const GLvoid*)indices);
+
+    std::vector<struct ObjectVertices*>::iterator it = objectNormals3d.begin();
+
+    for(ObjectVertices* vtex : objectVertices3d)
+    {
+      struct ObjectVertices* nmal = *it++;
+      //congfigure_attributes will enable vertex attribute array, but not disable it: we need to change that
+      program.configure_attributes(ATTRIB_VERTEX, vtex->m_ptr, 4); //four GLfloats per vertex
+      program.configure_attributes(ATTRIB_NORMAL, nmal->m_ptr, 3);
+
+
+      //configure matrices - model matrix.
+      scaleM = glm::scale(e_matrix, glm::vec3(scale, scale, scale)); 
+      program.change_mat4(UNILOC_M , scaleM * vtex->m_m);
+
+      glDrawArrays(GL_TRIANGLES, 0, vtex->m_size/4);
+
+      GLint attrib_vtex = glGetAttribLocation(program.getId(), ATTRIB_VERTEX);
+      GLint attrib_nmal = glGetAttribLocation(program.getId(), ATTRIB_NORMAL);
+
+      glDisableVertexAttribArray(attrib_vtex);
+      glDisableVertexAttribArray(attrib_nmal);
+    }
 
     //glVertexAttribPointer(glGetAttribLocation(program.getId(),"vertex"), 3, GL_FLOAT, GL_FALSE, 0, &verts[0]);
     //glEnableVertexAttribArray(0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+  //if(vertices_count > 0 && vertices != nullptr)  
+   // glDrawArrays(GL_TRIANGLES, 0, vertices_count);
     //glDisableVertexAttribArray(0);
 }
 
@@ -569,6 +603,143 @@ void View::Teardown()
 
 }
 
+//used for setVertices
+
+
+#define OSS_NOT_HERE(X) static_cast<std::ostringstream &&>(std::ostringstream() << X).str()
+
+namespace { //used for setVertices
+  std::string toString(const Vector3d &v)
+{
+	return OSS_NOT_HERE(v[0] << " " << v[1] << " " << v[2]);
+}
+
+Vector3d fromString(const std::string &vertexString) //used for setVertices
+{
+	Vector3d v;
+	std::istringstream stream{vertexString};
+	stream >> v[0] >> v[1] >> v[2];
+	return v;
+}
+
+}
+
+
+void View::clearVertices()
+{
+    objectVertices3d.clear();
+    objectNormals3d.clear();
+}
+
+void View::setVertices(shared_ptr<const Geometry> root_geom)
+{
+  setVertices(root_geom, Transform3d::Identity(), false);
+  
+}
+
+void View::setVertices(shared_ptr<const Geometry> root_geom, const Transform3d &m, bool clVerts)
+{
+  std::vector<GLfloat>* localVertices = new std::vector<GLfloat>();
+
+  //clear old objects from view
+  if(clVerts)
+    clearVertices();
+  
+  objectVertices3d.reserve(MAX_ARRAY_SIZE_OPENGLES2);
+  objectNormals3d.reserve(MAX_ARRAY_SIZE_OPENGLES2);
+  
+  PolySet ps(3);
+  
+	if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom.get())) {
+    if (!N->p3->is_simple())
+      PRINT("WARNING: Exported object may not be a valid 2-manifold and may need repair : setVertices");
+    
+    if (!CGALUtils::createPolySetFromNefPolyhedron3(*(N->p3), ps))
+      goto CONT_RENDER;
+	}
+	else if (const PolySet *pse = dynamic_cast<const PolySet *>(root_geom.get())) {
+		ps = (PolySet)*pse;
+    goto CONT_RENDER;
+	}
+	else if (dynamic_cast<const Polygon2d *>(root_geom.get())) {
+		assert(false && "Unsupported dimension 2D");
+	}
+	else {
+		PRINT("ERROR: Nef->PolySet failed in : setVertices");
+    return;
+	}
+	
+	
+	
+CONT_RENDER:	
+	
+  PolySet triangulated(3);
+	PolysetUtils::tessellate_faces(ps, triangulated);
+  if(DEBUG_SETVERTICES)
+    std::cout << std::endl << std::endl << std::endl << "Start of setVertices output: " << std::endl;
+
+	for(const auto &p : triangulated.polygons) {
+
+	  assert(p.size() == 3); // STL only allows triangles
+          
+          localVertices->push_back((GLfloat)p[0](0,0));
+          localVertices->push_back((GLfloat)p[0](1,0));
+          localVertices->push_back((GLfloat)p[0](2,0));
+          localVertices->push_back((GLfloat)1.0f); //every fourth value in a vertex will be 1.0f as vec4 is needed in shader.
+    
+          localVertices->push_back((GLfloat)p[1](0,0));
+          localVertices->push_back((GLfloat)p[1](1,0));
+          localVertices->push_back((GLfloat)p[1](2,0));
+          localVertices->push_back((GLfloat)1.0f);
+    
+          localVertices->push_back((GLfloat)p[2](0,0));
+          localVertices->push_back((GLfloat)p[2](1,0));
+          localVertices->push_back((GLfloat)p[2](2,0));
+          localVertices->push_back((GLfloat)1.0f);
+
+          if(DEBUG_SETVERTICES)
+          {
+	    std::array<std::string, 3> vertexStrings;
+	    std::transform(p.cbegin(), p.cend(), vertexStrings.begin(), toString);
+
+	    Vector3d p0 = fromString(vertexStrings[0]);
+	    Vector3d p1 = fromString(vertexStrings[1]);
+	    Vector3d p2 = fromString(vertexStrings[2]);
+
+                              /* precision           flags  coeffSep  rowSep rowPre  rowSuff matPre  matSuff */
+            Eigen::IOFormat fmt(Eigen::StreamPrecision, 0,   "",      " ",     "",    "",      "",    "");
+
+            std::stringstream ss;
+            ss << p0.format(fmt) << std::endl;
+            ss << p1.format(fmt) << std::endl;// << " ";
+            ss << p2.format(fmt) << std::endl;// << " ";
+            ss << p0.format(fmt) << std::endl << std::endl << std::endl;
+            std::string s = ss.str();
+            ss.str(s);
+            std::cout << ss.str();// << std::endl << std::endl;
+          }
+
+          //split big objects into several pieces of the same size
+          if(localVertices->size() >= MAX_ARRAY_SIZE_OPENGLES2)//objVertices->size >= MAX_ARRAY_SIZE_OPENGLES2)
+          {
+            int bigSize = localVertices->size();
+            
+            storeVertices(localVertices, m);
+            storeNormals(localVertices);
+            localVertices = new std::vector<GLfloat>();
+          }
+            
+	}
+  //if object is small enough - all vertices will be put in one array. Or: if objects has ben
+  //split in loop above - save the rest of the vertices in the last array. 
+  if(0 < localVertices->size() && localVertices->size() < MAX_ARRAY_SIZE_OPENGLES2)
+  {
+    int size = localVertices->size();
+
+    storeVertices(localVertices, m);
+    storeNormals(localVertices);
+  }
+}
 
 //from original view class in rotatingWheel
 void View::normalizedDeviceCoordinates(int screenX, int screenY, float scale,
@@ -616,7 +787,7 @@ void View::init()
 	//glEnable(GL_TEXTURE_2D); //is not used in gl es2
 	//glEnable( GL_RGBA); //not working hmm I dont know why...
 	
-	//glEnable(GL_MULTISAMPLE_ARB);
+	glEnable(GL_MULTISAMPLE_ARB);
 // 	glEnable(GL_DOUBLE);
 
 	glCullFace(GL_BACK);
@@ -923,8 +1094,8 @@ void View::display_opencsg_warning_dialog()
 
 void View::mousePressEvent(QMouseEvent *event)
 {
-//   mouse_drag_active = true;
-//   last_mouse = event->globalPos();
+   mouse_drag_active = true;
+   //last_mouse = event->globalPos();
 }
 
 void View::mouseDoubleClickEvent (QMouseEvent *event) {
@@ -974,12 +1145,14 @@ void View::mouseMoveEvent(QMouseEvent *event)
 //   auto this_mouse = event->globalPos();
 //   double dx = (this_mouse.x() - last_mouse.x()) * 0.7;
 //   double dy = (this_mouse.y() - last_mouse.y()) * 0.7;
-//   if (mouse_drag_active) {
-//     if (event->buttons() & Qt::LeftButton
-// #ifdef Q_OS_MAC
-//         && !(event->modifiers() & Qt::MetaModifier)
-// #endif
-//       ) {
+     if (mouse_drag_active)
+     if (event->buttons() & Qt::LeftButton
+ #ifdef Q_OS_MAC
+         && !(event->modifiers() & Qt::MetaModifier)
+ #endif
+        ) {
+          angle += 0.2;
+
 //       // Left button rotates in xz, Shift-left rotates in xy
 //       // On Mac, Ctrl-Left is handled as right button on other platforms
 //       cam.object_rot.x() += dy;
@@ -993,7 +1166,7 @@ void View::mouseMoveEvent(QMouseEvent *event)
 //       normalizeAngle(cam.object_rot.x());
 //       normalizeAngle(cam.object_rot.y());
 //       normalizeAngle(cam.object_rot.z());
-//     } else {
+     } //else {
 //       // Right button pans in the xz plane
 //       // Middle button pans in the xy plane
 //       // Shift-right and Shift-middle zooms
@@ -1040,16 +1213,16 @@ void View::mouseMoveEvent(QMouseEvent *event)
 //       cam.object_trans.z() += tm(2,3);
 //       }
 //     }
-//     updateGL();
+     updateGL();
 //     emit doAnimateUpdate();
 //   }
-//   last_mouse = this_mouse;
+     //last_mouse = this_mouse;
 }
 
 void View::mouseReleaseEvent(QMouseEvent*)
 {
-//   mouse_drag_active = false;
-//   releaseMouse();
+   mouse_drag_active = false;
+   releaseMouse();
 }
 
 const QImage & View::grabFrame()
@@ -1102,3 +1275,6 @@ void View::setOrthoMode(bool enabled)
 // 	if (enabled) this->cam.setProjection(Camera::ProjectionType::ORTHOGONAL);
 // 	else this->cam.setProjection(Camera::ProjectionType::PERSPECTIVE);
 }
+
+
+View* View::m_viewInstance = (View*)nullptr;

@@ -347,7 +347,7 @@ namespace OGL {
     { if (object_list_) glDeleteLists(object_list_, 4); }
 
     void push_back(const Double_point& p, bool m) {
-        vertices_.push_back(DPoint(p,m));
+        vertices_.push_back(DPoint(p,m)); 
     }
     void push_back(const Double_segment& s, bool m) 
     { edges_.push_back(DSegment(s,m)); }
@@ -447,6 +447,13 @@ namespace OGL {
     }
 
     void draw(Halffacet_iterator f, bool is_back_facing) const {
+/*
+      static unsigned int j = 0;
+      static unsigned int k = 1;
+      static unsigned int rowc = 1;
+      static unsigned int minrows = 6;
+      static unsigned int maxrows = 6;
+
       PRINTD("draw(Halffacet_iterator)");
       //      CGAL_NEF_TRACEN("drawing facet "<<(f->debug(),""));
       GLUtesselator* tess_ = gluNewTess();
@@ -464,6 +471,8 @@ namespace OGL {
 		      GLU_TESS_WINDING_POSITIVE);
 
       DFacet::Coord_const_iterator cit;
+      DFacet::Coord_const_iterator first_cit;
+      
       CGAL::Color c = getFacetColor(f,is_back_facing);
       glColor3ub(c.red(),c.green(),c.blue());
       gluTessBeginPolygon(tess_,f->normal());
@@ -472,14 +481,52 @@ namespace OGL {
       gluTessNormal(tess_,f->dx(),f->dy(),f->dz());
       // forall facet cycles of f:
       for(unsigned i = 0; i < f->number_of_facet_cycles(); ++i) {
+        j = 0;
+        k = 1;
+        rowc = 1;
+        
+        if( i >= 1)
+          PRINTD("i is greater or equal to one");
+
         gluTessBeginContour(tess_);
 	//	CGAL_NEF_TRACEN("  Begin Contour");
 	// put all vertices in facet cycle into contour:
+
 	for(cit = f->facet_cycle_begin(i); 
+	    cit != f->facet_cycle_end(i); ++cit)
+           k++;
+       	
+        if(minrows <= k && k <= maxrows)
+        {
+          k = 1;
+          first_cit = f->facet_cycle_begin(i);
+
+        for(cit = f->facet_cycle_begin(i); 
 	    cit != f->facet_cycle_end(i); ++cit) {
-	  gluTessVertex(tess_, *cit, *cit);
-	  //	  CGAL_NEF_TRACEN("    add Vertex");
+          //if(k%5 >  0)
+            std::cout << *cit << ";" << std::endl;
+
+	    gluTessVertex(tess_, *cit, *cit);
+         
+         // if(k%4 == 0)
+         //  j++;
+
+          k++;
+          rowc++;
+ 
+          if(k%5 == 0)
+          {
+            k = 1;
+            j++;
+          }
+	  //  	  CGAL_NEF_TRACEN("    add Vertex");
 	}
+
+        std::cout << *first_cit << ";" << std::endl;
+        std::cout << std::endl;
+
+
+        } //if above for loop
         gluTessEndContour(tess_);
 	//	CGAL_NEF_TRACEN("  End Contour");
       }
@@ -487,6 +534,12 @@ namespace OGL {
       //      CGAL_NEF_TRACEN("End Polygon");
       gluDeleteTess(tess_);
       combineCallback(NULL, NULL, NULL, NULL);
+
+      if(rowc !=  5)
+        PRINTD("Facet had less or more than four vertices");
+
+      rowc = 0;
+*/
     }
 
     void construct_axes() const
@@ -525,7 +578,7 @@ namespace OGL {
 
 
     void fill_display_lists() {
-      PRINTD("fill_display_lists");
+      /*PRINTD("fill_display_lists");
       glNewList(object_list_, GL_COMPILE);
       Vertex_iterator v;
       for(v=vertices_.begin();v!=vertices_.end();++v) 
@@ -558,7 +611,7 @@ namespace OGL {
 
       glNewList(object_list_+3, GL_COMPILE); // axes:
       construct_axes();
-      glEndList();
+      glEndList();*/
 
     }
 
@@ -569,7 +622,10 @@ namespace OGL {
       switches[SNC_AXES] = false;
       style = SNC_BOUNDARY;
       object_list_ = glGenLists(4); 
-      CGAL_assertion(object_list_); 
+      auto glerror = glGetError();
+      if(GL_INVALID_OPERATION == glerror || glerror == 0)
+        PRINTD("glError in OGL_helper.h, glGenLists(4)\n");
+      //CGAL_assertion(object_list_);  //commented this as object_list_ is not used and glGenLists(4) above does not work on Raspberry Pi 3 GLES2 or GL //hw 2019-02-21
       fill_display_lists();
       PRINTD("init() end");
     }
@@ -584,7 +640,7 @@ namespace OGL {
 			     bbox().zmax() - bbox().zmin());
       if ( l < 1) // make sure that a single point doesn't screw up here
           l = 1;
-      glScaled( 4.0/l, 4.0/l, 4.0/l);
+      //glScaled( 4.0/l, 4.0/l, 4.0/l);
       glTranslated( -(bbox().xmax() + bbox().xmin()) / 2.0,
                     -(bbox().ymax() + bbox().ymin()) / 2.0,
                     -(bbox().zmax() + bbox().zmin()) / 2.0);
