@@ -36,11 +36,13 @@ ThrownTogetherRenderer::ThrownTogetherRenderer(shared_ptr<CSGProducts> root_prod
 																							 shared_ptr<CSGProducts> background_products)
 	: root_products(root_products), highlight_products(highlight_products), background_products(background_products)
 {
+  //QOpenGLFunctions::initializeOpenGLFunctions();
 }
 
 void ThrownTogetherRenderer::draw(bool /*showfaces*/, bool showedges) const
 {
   QOpenGLFunctions *func = new QOpenGLFunctions();
+  const_cast<QOpenGLFunctions*>(func)->initializeOpenGLFunctions();
 
 	PRINTD("Thrown draw");
  	if (this->root_products) {
@@ -48,7 +50,7 @@ void ThrownTogetherRenderer::draw(bool /*showfaces*/, bool showedges) const
 		func->glCullFace(GL_BACK);
 		renderCSGProducts(*this->root_products, false, false, showedges, false);
 		func->glCullFace(GL_FRONT);
-		glColor3ub(255, 0, 255);
+		//glColor3ub(255, 0, 255);
 		renderCSGProducts(*this->root_products, false, false, showedges, true);
 		func->glDisable(GL_CULL_FACE);
 	}
@@ -62,6 +64,7 @@ void ThrownTogetherRenderer::renderChainObject(const CSGChainObject &csgobj, boo
 																							 bool background_mode, bool showedges, bool fberror, OpenSCADOperator type) const
 {
   QOpenGLFunctions *func = new QOpenGLFunctions();
+  const_cast<QOpenGLFunctions*>(func)->initializeOpenGLFunctions();
 
 	if (this->geomVisitMark[std::make_pair(csgobj.leaf->geom.get(), &csgobj.leaf->matrix)]++ > 0) return;
 	const Color4f &c = csgobj.leaf->color;
@@ -118,6 +121,7 @@ void ThrownTogetherRenderer::renderCSGProducts(const CSGProducts &products, bool
 																							 bool fberror) const
 {
     QOpenGLFunctions *func = new QOpenGLFunctions();
+    const_cast<QOpenGLFunctions*>(func)->initializeOpenGLFunctions();
 
 	PRINTD("Thrown renderCSGProducts");
 	func->glDepthFunc(GL_LEQUAL);

@@ -42,10 +42,10 @@ public:
 	Transform3d m;
 	Renderer::csgmode_e csgmode;
 	void render() override {
-		glPushMatrix();
-		glMultMatrixd(m.data());
+		//glPushMatrix();
+		//glMultMatrixd(m.data());
 		Renderer::render_surface(geom, csgmode, m);
-		glPopMatrix();
+		//glPopMatrix();
 	}
 };
 

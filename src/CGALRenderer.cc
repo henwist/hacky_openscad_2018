@@ -106,23 +106,23 @@ void CGALRenderer::draw(bool showfaces, bool showedges) const
 			// Draw 2D polygons
 			func->glDisable(GL_LIGHTING);
 // FIXME:		const QColor &col = Preferences::inst()->color(Preferences::CGAL_FACE_2D_COLOR);
-			glColor3f(0.0f, 0.75f, 0.60f);
+			//glColor3f(0.0f, 0.75f, 0.60f);
 
 			for (size_t i=0; i < this->polyset->polygons.size(); i++) {
-				glBegin(GL_POLYGON);
+				//glBegin(GL_POLYGON);
 				for (size_t j=0; j < this->polyset->polygons[i].size(); j++) {
 					const auto &p = this->polyset->polygons[i][j];
-					glVertex3d(p[0], p[1], 0);
+					//glVertex3d(p[0], p[1], 0);
 				}
-				glEnd();
+				//glEnd();
 			}
 		
 			// Draw 2D edges
 			func->glDisable(GL_DEPTH_TEST);
 
-			func->glLineWidth(2);
+			//func->glLineWidth(2);
 // FIXME:		const QColor &col2 = Preferences::inst()->color(Preferences::CGAL_EDGE_2D_COLOR);
-			glColor3f(1.0f, 0.0f, 0.0f);
+			//glColor3f(1.0f, 0.0f, 0.0f);
 			this->polyset->render_edges(CSGMODE_NONE);
 			func->glEnable(GL_DEPTH_TEST);
 		}

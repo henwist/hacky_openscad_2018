@@ -58,11 +58,11 @@ void Renderer::setColor(const float color[4], GLint *shaderinfo) const
 	if (c[1] < 0) c[1] = col[1];
 	if (c[2] < 0) c[2] = col[2];
 	if (c[3] < 0) c[3] = col[3];
-	glColor4fv(c);
+	//glColor4fv(c);
 #ifdef ENABLE_OPENCSG
 	if (shaderinfo) {
-		 func->glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
-		 func->glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
+		 //func->glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
+		 //func->glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
 	}
 #endif
 }

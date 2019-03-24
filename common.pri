@@ -33,7 +33,7 @@ include(bison.pri)
 include(cgal.pri)
 include(opencsg.pri)
 include(opengl.pri)
-include(glew.pri)
+#include(glew.pri) //hw 2019-03-13 : Qt5 doesnt work with GLEW
 include(eigen.pri)
 include(boost.pri)
 include(glib-2.0.pri)

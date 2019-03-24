@@ -249,8 +249,8 @@ namespace OGL {
     GLdouble* pu(static_cast<GLdouble*>(user));
     //    CGAL_NEF_TRACEN("vertexCallback coord  "<<pc[0]<<","<<pc[1]<<","<<pc[2]);
     //    CGAL_NEF_TRACEN("vertexCallback normal "<<pu[0]<<","<<pu[1]<<","<<pu[2]);
-    glNormal3dv(pu);
-    glVertex3dv(pc); 
+    //glNormal3dv(pu);
+    //glVertex3dv(pc); 
   }
 
   inline void CGAL_GLU_TESS_CALLBACK combineCallback(GLdouble coords[3], GLvoid *[4], GLfloat [4], GLvoid **dataOut)
@@ -344,7 +344,7 @@ namespace OGL {
     }
     */
     ~Polyhedron() 
-    { if (object_list_) glDeleteLists(object_list_, 4); }
+    { if (object_list_) ; /*glDeleteLists(object_list_, 4);*/ }
 
     void push_back(const Double_point& p, bool m) {
         vertices_.push_back(DPoint(p,m)); 
@@ -383,16 +383,16 @@ namespace OGL {
       PRINTD("draw( Vertex_iterator )");
       //      CGAL_NEF_TRACEN("drawing vertex "<<*v);
       CGAL::Color c = getVertexColor(v);
-      glPointSize(10);
+      //glPointSize(10);
       //glPointSize(1);
-      glColor3ub(c.red(), c.green(), c.blue());
-      glBegin(GL_POINTS);
-      glVertex3d(v->x(),v->y(),v->z());
+      //glColor3ub(c.red(), c.green(), c.blue());
+      //glBegin(GL_POINTS);
+      //glVertex3d(v->x(),v->y(),v->z());
 #ifdef CGAL_NEF_EMPHASIZE_VERTEX
-      glColor3ub(255,0,0);
-      glVertex3d(CGAL_NEF_EMPHASIZE_VERTEX);
+      //glColor3ub(255,0,0);
+      //glVertex3d(CGAL_NEF_EMPHASIZE_VERTEX);
 #endif
-      glEnd();
+      //glEnd();
     }
 
     // Overridden in CGAL_renderer
@@ -413,13 +413,13 @@ namespace OGL {
       //      CGAL_NEF_TRACEN("drawing edge "<<*e);
       Double_point p = e->source(), q = e->target();
       CGAL::Color c = getEdgeColor(e);
-      glLineWidth(5);
+      //glLineWidth(5);
       //glLineWidth(1);
-      glColor3ub(c.red(),c.green(),c.blue());
-      glBegin(GL_LINE_STRIP);
-      glVertex3d(p.x(), p.y(), p.z());
-      glVertex3d(q.x(), q.y(), q.z());
-      glEnd();
+      //glColor3ub(c.red(),c.green(),c.blue());
+      //glBegin(GL_LINE_STRIP);
+      //glVertex3d(p.x(), p.y(), p.z());
+      //glVertex3d(q.x(), q.y(), q.z());
+      //glEnd();
     }
 
 
@@ -545,35 +545,35 @@ namespace OGL {
     void construct_axes() const
     { 
       PRINTD("construct_axes");
-      glLineWidth(2.0);
+     // glLineWidth(2.0);
       // red x-axis
-      glColor3f(1.0,0.0,0.0);
-      glBegin(GL_LINES);
-      glVertex3f(0.0,0.0,0.0);
-      glVertex3f(5000.0,0.0,0.0);
-      glEnd();
+     // glColor3f(1.0,0.0,0.0);
+      //glBegin(GL_LINES);
+      //glVertex3f(0.0,0.0,0.0);
+      //glVertex3f(5000.0,0.0,0.0);
+      //glEnd();
        // green y-axis 
-      glColor3f(0.0,1.0,0.0);
-      glBegin(GL_LINES);
-      glVertex3f(0.0,0.0,0.0);
-      glVertex3f(0.0,5000.0,0.0);
-      glEnd();
+      //glColor3f(0.0,1.0,0.0);
+      //glBegin(GL_LINES);
+      //glVertex3f(0.0,0.0,0.0);
+      //glVertex3f(0.0,5000.0,0.0);
+      //glEnd();
       // blue z-axis and equator
-      glColor3f(0.0,0.0,1.0);
-      glBegin(GL_LINES);
-      glVertex3f(0.0,0.0,0.0);
-      glVertex3f(0.0,0.0,5000.0);
-      glEnd();
+      //glColor3f(0.0,0.0,1.0);
+      //glBegin(GL_LINES);
+      //glVertex3f(0.0,0.0,0.0);
+      //glVertex3f(0.0,0.0,5000.0);
+      //glEnd();
       // six coordinate points in pink:
-      glPointSize(10);
-      glBegin(GL_POINTS);
-      glColor3f(1.0,0.0,0.0);
-      glVertex3d(5,0,0);
-      glColor3f(0.0,1.0,0.0);
-      glVertex3d(0,5,0);
-      glColor3f(0.0,0.0,1.0);
-      glVertex3d(0,0,5);
-      glEnd();
+      //glPointSize(10);
+      //glBegin(GL_POINTS);
+      //glColor3f(1.0,0.0,0.0);
+      //glVertex3d(5,0,0);
+      //glColor3f(0.0,1.0,0.0);
+      //glVertex3d(0,5,0);
+      //glColor3f(0.0,0.0,1.0);
+      //glVertex3d(0,0,5);
+      //glEnd();
     }
 
 
@@ -621,7 +621,7 @@ namespace OGL {
       init_ = true;
       switches[SNC_AXES] = false;
       style = SNC_BOUNDARY;
-      object_list_ = glGenLists(4); 
+      //object_list_ = glGenLists(4); 
       auto glerror = glGetError();
       if(GL_INVALID_OPERATION == glerror || glerror == 0)
         PRINTD("glError in OGL_helper.h, glGenLists(4)\n");
@@ -641,21 +641,21 @@ namespace OGL {
       if ( l < 1) // make sure that a single point doesn't screw up here
           l = 1;
       //glScaled( 4.0/l, 4.0/l, 4.0/l);
-      glTranslated( -(bbox().xmax() + bbox().xmin()) / 2.0,
-                    -(bbox().ymax() + bbox().ymin()) / 2.0,
-                    -(bbox().zmax() + bbox().zmin()) / 2.0);
+      //glTranslated( -(bbox().xmax() + bbox().xmin()) / 2.0,
+        //            -(bbox().ymax() + bbox().ymin()) / 2.0,
+          //          -(bbox().zmax() + bbox().zmin()) / 2.0);
       if (style == SNC_BOUNDARY) {
 	//glEnable(GL_LIGHTING); 
-	glCallList(object_list_+2); // facets
+	//glCallList(object_list_+2); // facets
 	//glDisable(GL_LIGHTING);
       }
       // move edges and vertices a bit towards the view-point, 
       // i.e., 1/100th of the unit vector in camera space
       //      double f = l / 4.0 / 100.0;
       //      glTranslated( z_vec[0] * f, z_vec[1] * f, z_vec[2] * f);
-      glCallList(object_list_+1); // edges
-      glCallList(object_list_);   // vertices
-      if (switches[SNC_AXES]) glCallList(object_list_+3); // axis
+      //glCallList(object_list_+1); // edges
+      //glCallList(object_list_);   // vertices
+      if (switches[SNC_AXES]) ;//glCallList(object_list_+3); // axis
       PRINTD("draw() end");
    }
 

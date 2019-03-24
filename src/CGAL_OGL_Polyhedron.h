@@ -63,16 +63,16 @@ public:
 	void draw(bool showedges) const {
 		PRINTD("draw()");
 		if(this->style == SNC_BOUNDARY) {
-			glCallList(this->object_list_+2);
+			//glCallList(this->object_list_+2);
 			if(showedges) {
-				glDisable(GL_LIGHTING);
-				glCallList(this->object_list_+1);
-				glCallList(this->object_list_);
+			//	glDisable(GL_LIGHTING);
+			//	glCallList(this->object_list_+1);
+			//	glCallList(this->object_list_);
 			}
 		} else {
-			glDisable(GL_LIGHTING);
-			glCallList(this->object_list_+1);
-			glCallList(this->object_list_);
+			//glDisable(GL_LIGHTING);
+			//glCallList(this->object_list_+1);
+			//glCallList(this->object_list_);
 		}
 		PRINTD("draw() end");
 	}

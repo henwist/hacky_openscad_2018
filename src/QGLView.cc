@@ -1,7 +1,7 @@
 #include "QGLView.h"
 #include <QtGui/qevent.h>
+#include <QTimer>
 
-//#include <GL/gl.h>
 
 #include <QSurfaceFormat>
 
@@ -134,24 +134,6 @@ void OpenGLWindow::changeSize()
 }
 
 
-
-
-static const char *vertexShaderSource =
-    "attribute highp vec4 posAttr;\n"
-    "attribute lowp vec4 colAttr;\n"
-    "varying lowp vec4 col;\n"
-    "uniform highp mat4 matrix;\n"
-    "void main() {\n"
-    "   col = colAttr;\n"
-    "   gl_Position = matrix * posAttr;\n"
-    "}\n";
-
-static const char *fragmentShaderSource =
-    "varying lowp vec4 col;\n"
-    "void main() {\n"
-    "   gl_FragColor = col;\n"
-    "}\n";
-
 void View::initialize()
 {
 /*
@@ -238,37 +220,18 @@ View::View(QWidget *parent):
 {
   this->parent = parent;
   e_matrix = glm::mat4(1.0);
+  mv_inv   = e_matrix; 
+  currentRotAxis = glm::vec3(0.0, 0.0, 0.0);
+
   this->mouse_drag_active = false;
 
   m_viewInstance = this;
 
-   //seems not working all right: setSamles(4)- so anti-aliasing how to do that? //hw 2019-02-22
-   QSurfaceFormat fmt;
-   fmt.setVersion(2,0);
-   //fmt.setDepthBufferSize(24);
-   //fmt.setStencilBufferSize(8);
-   //fmt.setProfile(QSurfaceFormat::NoProfile);
-   //fmt.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES);
-   fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-   fmt.setSamples(4);
-   this->setFormat(fmt);
-   this->makeCurrent();
-/*
-   QSurfaceFormat fmt;
-   fmt.setVersion(2,0);
-   fmt.setDepthBufferSize(24);
-   fmt.setStencilBufferSize(8);
-   fmt.setProfile(QSurfaceFormat::NoProfile);
-   fmt.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES);
-   fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
- 
-   //OpenGLWindow...
-   this->oglw.setFormat(fmt);
-   this->oglw.setAnimating(true);
+   void* handle = QOpenGLContext::openGLModuleHandle(); //hw 2019-03-09 : to see if we can extract a handle and which type of OpenGL context we have.
+   std::cout << "QOpenGLContext::OpenGLModuleType: " <<  QOpenGLContext::openGLModuleType() << std::endl;
 
-   oglw.show();
-*/
 }
+
   
 View::~View()
 {
@@ -277,47 +240,21 @@ View::~View()
 
 void View::initializeGL()
 {
+  QOpenGLFunctions::initializeOpenGLFunctions();
+  
   GLView::initializeGL();
-
-  initializeOpenGLFunctions();
-
-  //oglw.initialize();
 
   this->init(); //old rotatingWheel
   this->initMatrices(); //...
 
  
-/*
-   m_context = new QOpenGLContext();
-   m_context->setFormat(fmt);
-   m_context->create();
-   m_context->makeCurrent((QSurface*)this->parent->windowHandle());
-
-  initializeOpenGLFunctions();
-*/
-//   wdgt->setFormat(fmt);
-//   wdgt->makeCurrent();
    GLfloat far_far_away = 100.0f;
-// 
-//   InitOpenGLProgram();
-//  
-   glEnable(GL_DEPTH_TEST);
-   glDepthRange(-far_far_away, +far_far_away);
-// 
+
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-// 
-//   // The following line is reported to fix issue #71
-   glMateriali(GL_FRONT_AND_BACK, GL_SHININESS, 64);
-//   
-//   IComponent cmp;
-//   
-//   Init(cmp);
 
-
-     program.createShaders("simplevertshader.glsl", "simplefragshader.glsl");
-     //program.printProgramLog();
-
+   program.createShaders("simplevertshader.glsl", "simplefragshader.glsl");
+   //program.printProgramLog();
 }
 
   
@@ -329,49 +266,51 @@ void View::resizeGL(int w, int h)
 }
 
 
-  
+
+void View::privateDrawVertices()
+{
+    std::vector<struct ObjectVertices*>::iterator it = objectNormals3d.begin();
+
+    for(ObjectVertices* vtex : objectVertices3d)
+    {
+      //configure matrices - model matrix.
+      scaleM = glm::scale(e_matrix, glm::vec3(scale, scale, scale)); 
+      program.change_mat4(UNILOC_M , scaleM * vtex->m_m);
+	
+      struct ObjectVertices* nmal = *it++;
+      //congfigure_attributes will enable vertex attribute array, but not disable it: we need to change that
+      program.configure_attributes(ATTRIB_VERTEX, vtex->m_ptr, 4); //four GLfloats per vertex
+      program.configure_attributes(ATTRIB_NORMAL, nmal->m_ptr, 3);
+
+      glDrawArrays(GL_TRIANGLES, 0, vtex->m_size/4); //divided by four due to one vertex is four GLfloats.
+
+      GLint attrib_vtex = glGetAttribLocation(program.getId(), ATTRIB_VERTEX);
+      GLint attrib_nmal = glGetAttribLocation(program.getId(), ATTRIB_NORMAL);
+
+      glDisableVertexAttribArray(attrib_vtex);
+      glDisableVertexAttribArray(attrib_nmal);
+    }
+}
+
 void View::paintGL()
 {
-  GLView::paintGL();
-
   static bool isInitialized = false;
-  //oglw.render();
-  //this->render();
 
-  //wdgt->makeCurrent();
-  
-/*  QOpenGLContext *ctx = nullptr;
-  ctx = this->context();
-bool valid = ctx->isValid();
-*/
-    if(!isInitialized)
-    {
-      initializeOpenGLFunctions();
-      isInitialized = true;
-    }
-     //program.createShaders("simplevertshader.glsl", "simplefragshader.glsl");
-//  programID = program.getId();
-//  assert(programID != -1);
+  if(!isInitialized)
+  {
+    initializeOpenGLFunctions();
+    isInitialized = true;
+  }
 
-
-//printf("Shaders loaded, and programID= %d\n", programID);
-
-//glUseProgram(programID);	
+  GLView::paintGL();
 
   glUseProgram(program.getId());
   glBindFramebuffer(GL_FRAMEBUFFER,0);
   
-//  glClearColor(1.0, 0.0, 1.0, 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-  //configure matrices - rotation matrix.
-  myRotationAxis = glm::vec3(XAXIS, YAXIS, ZAXIS);
-  rotMatrix = e_matrix * glm::rotate( e_matrix, angle, myRotationAxis );
-  program.configure_mat4(UNILOC_ROTMATRIX, rotMatrix);
 
   // 	//configure matrices - view matrix.
   program.configure_mat4(UNILOC_V, this->getViewMatrix());
-
 
   program.configure_mat4(UNILOC_P, this->getProjectionMatrix());
 
@@ -380,8 +319,8 @@ bool valid = ctx->isValid();
   v_inv = glm::inverse(this->getViewMatrix());
   program.configure_mat4(UNILOC_V_INV, v_inv);
 
-  mv_inv = glm::transpose(glm::inverse(this->getViewMatrix() * m));
-  program.configure_mat4(UNILOC_MV_INV, mv_inv);
+  //mv_inv = glm::transpose(glm::inverse(this->getViewMatrix() * m));
+  //program.configure_mat4(UNILOC_MV_INV, mv_inv);
 
   //configure texture
   //program.configure_texture(UNILOC_MYTEXTURE2D, model.getTexture() /*mytexture2D*/, TEXTURE_WIDTH * TEXTURE_HEIGHT * TEXTURE_TEXEL_SIZE);
@@ -389,54 +328,25 @@ bool valid = ctx->isValid();
 
   program.change_float(UNILOC_ALPHA, 1.0);
 
-    static const GLfloat verts[] = {
-       -0.5f,  -0.5f, 0.0f, //1.0f,
-        0.25f,  -0.5f, 0.0f, //1.0f,
-        0.5f,   0.5f, 0.0f,//, 1.0f
-  //     -0.5f,  -0.5f, 0.0f, //1.0f,
-//        0.5f,   0.5f, 0.0f,//, 1.0f
-       -0.5f,   0.5f, 0.0f
-    };
+  for(auto rd : angleValues) //there is always one value in angleValues, namely the last rotation angle.
+  {
+          
+      //configure matrices - rotation matrix.
+      rotMatrix = glm::rotate( rotMatrix, rd->angle, rd->axis);
+      program.configure_mat4(UNILOC_ROTMATRIX, rotMatrix);
 
-  // static const unsigned short indices[] = { 0, 1, 2, 0, 2, 3 };
+      mv_inv = glm::inverse(rotMatrix);
+        
+      program.configure_mat4(UNILOC_MV_INV, mv_inv);
 
-    // const GLuint count_total_indices = 6;
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  //configure arributes
-  //if(vertices != nullptr)
-    //program.configure_attributes(ATTRIB_VERTEX, &vertices[0], 3);
-//  program.configure_attributes(ATTRIB_NORMAL, model.getNormalData(0),       3);
-
-    //glDrawElements(GL_TRIANGLES,count_total_indices, GL_UNSIGNED_SHORT, (const GLvoid*)indices);
-
-    std::vector<struct ObjectVertices*>::iterator it = objectNormals3d.begin();
-
-    for(ObjectVertices* vtex : objectVertices3d)
-    {
-      struct ObjectVertices* nmal = *it++;
-      //congfigure_attributes will enable vertex attribute array, but not disable it: we need to change that
-      program.configure_attributes(ATTRIB_VERTEX, vtex->m_ptr, 4); //four GLfloats per vertex
-      program.configure_attributes(ATTRIB_NORMAL, nmal->m_ptr, 3);
-
-
-      //configure matrices - model matrix.
-      scaleM = glm::scale(e_matrix, glm::vec3(scale, scale, scale)); 
-      program.change_mat4(UNILOC_M , scaleM * vtex->m_m);
-
-      glDrawArrays(GL_TRIANGLES, 0, vtex->m_size/4);
-
-      GLint attrib_vtex = glGetAttribLocation(program.getId(), ATTRIB_VERTEX);
-      GLint attrib_nmal = glGetAttribLocation(program.getId(), ATTRIB_NORMAL);
-
-      glDisableVertexAttribArray(attrib_vtex);
-      glDisableVertexAttribArray(attrib_nmal);
+      privateDrawVertices();
     }
 
-    //glVertexAttribPointer(glGetAttribLocation(program.getId(),"vertex"), 3, GL_FLOAT, GL_FALSE, 0, &verts[0]);
-    //glEnableVertexAttribArray(0);
-  //if(vertices_count > 0 && vertices != nullptr)  
-   // glDrawArrays(GL_TRIANGLES, 0, vertices_count);
-    //glDisableVertexAttribArray(0);
+    //clear and add a rotation so the drawing of vertices always kick in above. 
+    angleValues.clear();
+    angleValues.push_back(new struct rotateData({currentRotAxis, 0.0}));
 }
 
 
@@ -650,7 +560,7 @@ void View::setVertices(shared_ptr<const Geometry> root_geom, const Transform3d &
   
   PolySet ps(3);
   
-	if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom.get())) {
+  if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom.get())) {
     if (!N->p3->is_simple())
       PRINT("WARNING: Exported object may not be a valid 2-manifold and may need repair : setVertices");
     
@@ -771,55 +681,43 @@ void View::init()
   int y = 0;
   width = 640;
   height = 480;
+  
+  initializeOpenGLFunctions();
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_STENCIL_TEST);
+  glEnable(GL_BLEND); //used to be able to use alpha in fragment shader.
 
- initializeOpenGLFunctions();
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	//glEnable(GL_SMOOTH);
-// 	glEnable(GL_RGBA);
-// 	glEnable(GL_LINE_SMOOTH);
-// 	glEnable(GL_POLYGON_SMOOTH);
-	glEnable(GL_BLEND); //used to be able to use alpha in fragment shader.
-	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST ); 
-	//glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST ); 
-	//glEnable(GL_TEXTURE_2D); //is not used in gl es2
-	//glEnable( GL_RGBA); //not working hmm I dont know why...
-	
-	glEnable(GL_MULTISAMPLE_ARB);
-// 	glEnable(GL_DOUBLE);
-
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-	glDepthFunc(GL_LESS); 
-	glClearColor(0.8f, 0.8f, 0.6f, 1.0f);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_MULTISAMPLE_ARB);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
+  glDepthFunc(GL_LESS); 
+  glClearColor(0.8f, 0.8f, 0.6f, 1.0f);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glViewport ( x, y, width, height ); //is working very well -> the object is inn one corner and smaller.  
 } 
 
 void View::initMatrices()
 {
- 	//configure matrices - projection matrix.
-	p = glm::ortho(-OPENGL_WORLD_COORDINATE_X * WINDOW_ASPECT_RATIO, 
+  //configure matrices - projection matrix.
+  p = glm::ortho(-OPENGL_WORLD_COORDINATE_X * WINDOW_ASPECT_RATIO, 
 		       OPENGL_WORLD_COORDINATE_X  * WINDOW_ASPECT_RATIO,
 		       -OPENGL_WORLD_COORDINATE_Y, OPENGL_WORLD_COORDINATE_Y, 
 		       OPENGL_WORLD_NEAR, OPENGL_WORLD_FAR); // In world coordinates
 	
-	//p = glm::perspective(fieldOfView, aspectRatio, nearClippingPlane, farClippingPlane);
+  //p = glm::perspective(fieldOfView, aspectRatio, nearClippingPlane, farClippingPlane);
 	
-		//configure matrices - view matrix.
-	setupCamera();
-	v = glm::lookAt(cameraPosition, cameraTarget, upVector);
-
+  //configure matrices - view matrix.
+  setupCamera();
+  v = glm::lookAt(cameraPosition, cameraTarget, upVector);
 }
 
 void View::setupCamera()
 { 
-  cameraPosition =  glm::vec3(0, 0, 5/*addDist*1, -addDist*2*/); //same position as one lightsource. //same position as one lightsource./* glm::vec3(0, addDist*1, -addDist*2); //same position as one lightsource.*/
+  cameraPosition =  glm::vec3(1, -1, 1/*addDist*1, -addDist*2*/); //same position as one lightsource. //same position as one lightsource./* glm::vec3(0, addDist*1, -addDist*2); //same position as one lightsource.*/
   cameraTarget = glm::vec3(0, 0, 0);
-  upVector = glm::vec3(0, 1, 0);
+  upVector = glm::vec3(0, 0, 1);
   
 }
 
@@ -854,8 +752,8 @@ void View::InitOpenGLProgram()
 
 
 //   //configure matrices - rotation matrix.
-//   myRotationAxis = glm::vec3(XAXIS, YAXIS, ZAXIS);
-//   rotMatrix = e_matrix;/*glm::rotate( e_matrix, angle += 0.02f, myRotationAxis );*/
+//   currentRotAxis = glm::vec3(XAXIS, YAXIS, ZAXIS);
+//   rotMatrix = e_matrix;/*glm::rotate( e_matrix, angle += 0.02f, currentRotAxis );*/
 //   program.configure_mat4(UNILOC_ROTMATRIX, rotMatrix);
 // 
 //   //configure matrices - model matrix.
@@ -1140,83 +1038,123 @@ void View::normalizeAngle(GLdouble& angle)
 //   while(angle > 360) angle -= 360;
 }
 
+#include <QPointF>
+#include <cmath>
+#include <cstdlib>
+#define GLM_SWIZZLE
+#define DEBUG_MOUSE_ROTATIONS 1
+#define MAX_ROTATION 0.78 //1/8:th of a full rotation
+#define MAX_SAVED_MOUSE_ROTATIONS 5
+
+static glm::vec3 relLastPos(0.0, 0.0, 0.0);
+static glm::vec3 lastP(0.0, 0.0, 0.0);
+static glm::vec3 xDir(1.0, 0.0, 0.0);
+static glm::vec3 yDir(0.0, 1.0, 0.0);
+static glm::vec4 currentCamAxis = glm::vec4(0.0, 0.0, 0.0, 1.0);
+static glm::vec4 XYAxis = glm::vec4(1.0, 0.0, 0.0, 1.0);
+static float amountDotX = 0.0;
+static float amountDotY = 0.0;
+static float dotX = 0.0;
+static float dotY = 0.0;
+static float smallDiff  = 0.0;
+static float rotFactor = 0.1 * (-1.0);
+
+static unsigned int xyN  = 8;
+
+void View::changeAxis()
+{
+  XYAxis = glm::vec4(1.0, 0.0, 0.0, 1.0);
+}
+
+
 void View::mouseMoveEvent(QMouseEvent *event)
 {
-//   auto this_mouse = event->globalPos();
-//   double dx = (this_mouse.x() - last_mouse.x()) * 0.7;
-//   double dy = (this_mouse.y() - last_mouse.y()) * 0.7;
+   static float oldAngleX = 0.0;
+   static float oldAngleY = 0.0;
+
+   //QTimer::singelShot(200, this, SLOT(updateGL));
+
+    /*static QTimer *timer = nullptr; //hw 2019-03-09 : this timer will fire when all events has been processed in the window system's event queue, as
+    				    //a standard interval value of 0ms is assigned to when the timer will activate.
+    if(timer == nullptr)
+    {
+      timer = new QTimer(this);
+      timer->setInterval(3*10000);
+      connect(timer, SIGNAL(timeout()), this, SLOT(changeAxis()));
+      timer->start();
+    }*/
+    
      if (mouse_drag_active)
      if (event->buttons() & Qt::LeftButton
  #ifdef Q_OS_MAC
          && !(event->modifiers() & Qt::MetaModifier)
  #endif
         ) {
-          angle += 0.2;
+          
+          //relative last position is the current mouse position - last position of the mouse -> a vector really (the user has moved the mouse in a direction).
+          relLastPos = glm::vec3(event->localPos().x(), event->localPos().y(), 0.0) - lastP;
+          //how much is the vector  relLastPos pointing in the x-direction (or y-direction) (the more, the higher the value)?
+          dotX = glm::dot(xDir, relLastPos);
+          dotY = glm::dot(yDir, relLastPos);
+          //small values of smallDiff means that the user has moved the mouse  diagonally (dotX and dotY is almost the same values).
+          smallDiff  = std::max(std::abs(dotX), std::abs(dotY)) -  std::min(std::abs(dotX), std::abs(dotY)) ;
+          //unwind the horizontal camera axis: (inverse rotation)  *  use the horizontal camera axis as it is at the moment(cross product)  
+          //by using the vector pointing in the camera direction and the up-vector of the camera. 
+          currentCamAxis = glm::inverse(rotMatrix) * glm::vec4(glm::cross(cameraPosition - cameraTarget, upVector), 1.0); 
+          
+          //depending on how much the user has moved the mouse in which direction, set rotation axis as either the camera axis or the z-axis.
+          currentRotAxis = (std::abs(dotX) < std::abs(dotY)) ?
+          glm::vec3(currentCamAxis.x, currentCamAxis.y, currentCamAxis.z) :
+          glm::vec3(0, 0, -1);
+          
+          //scale dotN to scale movements to smooth them.
+          amountDotX = dotX/5.0;
+          amountDotY = dotY/5.0;
+          
+          (std::abs(amountDotX) < std::abs(amountDotY)) ? 
+          angleX = rotFactor *
+          (amountDotY >  MAX_ROTATION ?  MAX_ROTATION :  (amountDotY < -MAX_ROTATION ? -MAX_ROTATION : amountDotY) ) 
+          :
+          angleY = rotFactor * 
+          (amountDotX >  MAX_ROTATION ?  MAX_ROTATION :  (amountDotX < -MAX_ROTATION ? -MAX_ROTATION : amountDotX) ); 
 
-//       // Left button rotates in xz, Shift-left rotates in xy
-//       // On Mac, Ctrl-Left is handled as right button on other platforms
-//       cam.object_rot.x() += dy;
-//       if ((QApplication::keyboardModifiers() & Qt::ShiftModifier) != 0) {
-//         cam.object_rot.y() += dx;
-// 			}
-//       else {
-//         cam.object_rot.z() += dx;
-// 			}
-// 
-//       normalizeAngle(cam.object_rot.x());
-//       normalizeAngle(cam.object_rot.y());
-//       normalizeAngle(cam.object_rot.z());
-     } //else {
-//       // Right button pans in the xz plane
-//       // Middle button pans in the xy plane
-//       // Shift-right and Shift-middle zooms
-//       if ((QApplication::keyboardModifiers() & Qt::ShiftModifier) != 0) {
-// 	      cam.zoom(-12.0 * dy);
-//       } else {
-// 
-//       double mx = +(dx) * 3.0 * cam.zoomValue() / QWidget::width();
-//       double mz = -(dy) * 3.0 * cam.zoomValue() / QWidget::height();
-// 
-//       double my = 0;
-// #if (QT_VERSION < QT_VERSION_CHECK(4, 7, 0))
-//       if (event->buttons() & Qt::MidButton) {
-// #else
-//       if (event->buttons() & Qt::MiddleButton) {
-// #endif
-//         my = mz;
-//         mz = 0;
-//         // actually lock the x-position
-//         // (turns out to be easier to use than xy panning)
-//         mx = 0;
-//       }
-// 
-//       Matrix3d aax, aay, aaz;
-//       aax = Eigen::AngleAxisd(-(cam.object_rot.x()/180) * M_PI, Vector3d::UnitX());
-//       aay = Eigen::AngleAxisd(-(cam.object_rot.y()/180) * M_PI, Vector3d::UnitY());
-//       aaz = Eigen::AngleAxisd(-(cam.object_rot.z()/180) * M_PI, Vector3d::UnitZ());
-//       Matrix3d tm3 = Matrix3d::Identity();
-//       tm3 = aaz * (aay * (aax * tm3));
-// 
-//       Matrix4d tm = Matrix4d::Identity();
-//       for (int i=0;i<3;i++) for (int j=0;j<3;j++) tm(j,i) = tm3(j,i);
-// 
-//       Matrix4d vec;
-//       vec <<
-//         0,  0,  0,  mx,
-//         0,  0,  0,  my,
-//         0,  0,  0,  mz,
-//         0,  0,  0,  1
-//       ;
-//       tm = tm * vec;
-//       cam.object_trans.x() += tm(0,3);
-//       cam.object_trans.y() += tm(1,3);
-//       cam.object_trans.z() += tm(2,3);
-//       }
-//     }
-     updateGL();
-//     emit doAnimateUpdate();
-//   }
-     //last_mouse = this_mouse;
+
+
+          if(angleY != oldAngleY)
+          {
+            angleValues.push_back(new struct rotateData({ currentRotAxis, angleY}));
+            oldAngleY = angleY;
+          }
+
+          if(angleX != oldAngleX)
+          {
+            angleValues.push_back(new struct rotateData({ currentRotAxis, angleX}));
+            oldAngleX = angleX;
+          }
+          
+          //save last mouse position.
+          lastP = glm::vec3(event->localPos().x(), event->localPos().y(), 0.0);
+          
+          if(DEBUG_MOUSE_ROTATIONS)
+          {
+          std::cout << "angleX: "  << angleX << std::endl;
+          std::cout << "angleY: "  << angleY << std::endl;
+          std::cout << "smallDiff: "  << smallDiff << std::endl;
+          std::cout << "dotX: "  << dotX << std::endl;
+          std::cout << "dotY: "  << dotY << std::endl;
+          std::cout << "event->localPos().x(): "  << event->localPos().x() << std::endl;
+          std::cout << "event->localPos().y(): "  << event->localPos().y() << std::endl;
+          std::cout << "event->globalPos().x(): "  << event->globalPos().x() << std::endl;
+          std::cout << "event->globalPos().y(): "  << event->globalPos().y() << std::endl;
+          std::cout << "lastP.x: "  << lastP.x << std::endl;
+          std::cout << "lastP.y: "  << lastP.y << std::endl;
+          std::cout << "XYAxis, x, y, z: "  << XYAxis.x << XYAxis.y << XYAxis.z  << std::endl;
+          }
+    }
+    
+  //smooth the rotation of objects by not updating the viewport at every mouse move.
+  if(angleValues.size() >= MAX_SAVED_MOUSE_ROTATIONS)
+    updateGL();
 }
 
 void View::mouseReleaseEvent(QMouseEvent*)
@@ -1246,12 +1184,13 @@ void View::wheelEvent(QWheelEvent *event)
  #if QT_VERSION >= 0x050000
  	this->cam.zoom(event->angleDelta().y());
         scale += ((float) event->angleDelta().y())/1000.0;
-        std::cout <<  scale << std::endl;
+        std::cout << "scale: " << scale << std::endl;
  #else
  	this->cam.zoom(event->delta());
         scale +=  ((float) event->angleDelta().y())/1000.0;
-        std::cout << scale << std::endl;
+        std::cout << "scale: " << scale << std::endl;
  #endif
+
    updateGL();
 
   if(scale < 0.01 || 10.0 < scale)

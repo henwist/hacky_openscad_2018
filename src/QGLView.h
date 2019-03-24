@@ -28,8 +28,8 @@
 
   //used for setting the axis of rotation
   #define XAXIS 0
-  #define YAXIS 1
-  #define ZAXIS 1
+  #define YAXIS 0
+  #define ZAXIS 0
 
   //rotate the axis in this speed.
   #define ROT_SPEED 0.05
@@ -270,6 +270,7 @@ public:
   
 private:
   void InitOpenGLProgram();
+  void privateDrawVertices();
 
 //many of these variables downwards will probably be integrated in a view component later on.
 glm::mat4 rotMatrix;
@@ -280,14 +281,16 @@ glm::mat4 mv_inv;
 glm::mat4 scaleM;
 glm::mat4 e_matrix;
 
-glm::vec3 myRotationAxis;
+glm::vec3 currentRotAxis;
 
 float fieldOfView = glm::radians(45.0f);
 float aspectRatio = 4.0f / 3.0f;
 float nearClippingPlane = 0.1f;
 float farClippingPlane = 1000.0f;
 
-float angle = 0.0f;
+float angleX = 0.0f;
+float angleY = 0.0f;
+
 float scale = 1.0;
 float* alpha;
 bool mouse_drag_active;
@@ -415,8 +418,16 @@ private:
       { }
     };
 
+    struct rotateData
+    {
+      glm::vec3 axis; 
+      float angle;
+    };
+
     std::vector<struct ObjectVertices*> objectVertices3d;
     std::vector<struct ObjectVertices*> objectNormals3d;
+    
+    std::vector<struct rotateData*> angleValues;
 
     QOpenGLShaderProgram *m_program;
     int m_frame;
@@ -465,6 +476,8 @@ public slots:
 	void ZoomIn(void);
 	void ZoomOut(void);
         void setVertices(shared_ptr<const Geometry> root_geom);
+        void changeAxis();
+
 
 #ifdef USE_QOPENGLWIDGET
 	void updateGL() { update(); }

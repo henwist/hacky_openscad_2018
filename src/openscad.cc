@@ -651,7 +651,7 @@ void dialogInitHandler(FontCacheInitializer *initializer, void *)
 	QMetaObject::invokeMethod(scadApp, "hideFontCacheDialog");
 }
 
-
+#include <QSurfaceFormat>
 
 int gui(vector<string> &inputFiles, const fs::path &original_path, int argc, char ** argv)
 {
@@ -662,6 +662,19 @@ int gui(vector<string> &inputFiles, const fs::path &original_path, int argc, cha
 		QFont::insertSubstitution(".Lucida Grande UI", "Lucida Grande");
 	}
 #endif
+        QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);  //hw 2019-03-08 :to be able to share OpenGL Contexts between windows.
+        QSurfaceFormat fmt;
+	fmt.setMajorVersion(2);
+	fmt.setMinorVersion(0);
+	//fmt.setOption(QSurfaceFormat::DeprecatedFunctions, true);
+	fmt.setProfile(QSurfaceFormat::NoProfile); //NoProfile
+	fmt.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES); //OpenGLES
+	fmt.setSwapBehavior(QSurfaceFormat::SwapBehavior::DoubleBuffer);
+	fmt.setSwapInterval(0);
+	//fmt.setSamples(4);
+	std::cout << "OpenGL major: " << fmt.version().first << ", minor: " << fmt.version().second << std::endl;
+	QSurfaceFormat::setDefaultFormat(fmt); //hw : end
+
 	OpenSCADApp app(argc, argv);
 	// remove ugly frames in the QStatusBar when using additional widgets
 	app.setStyleSheet("QStatusBar::item { border: 0px solid black; }");
