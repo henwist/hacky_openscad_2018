@@ -221,7 +221,7 @@ View::View(QWidget *parent):
   this->parent = parent;
   e_matrix = glm::mat4(1.0);
   mv_inv   = e_matrix; 
-  currentRotAxis = glm::vec3(0.0, 0.0, 0.0);
+  currentRotAxis = glm::vec3(0.0, 0.0, 1.0);
 
   this->mouse_drag_active = false;
 
@@ -327,6 +327,9 @@ void View::paintGL()
 
 
   program.change_float(UNILOC_ALPHA, 1.0);
+  
+  if(angleValues.size() == 0)
+    angleValues.push_back(new struct rotateData({currentRotAxis, 0.0}));
 
   for(auto rd : angleValues) //there is always one value in angleValues, namely the last rotation angle.
   {
@@ -1102,6 +1105,9 @@ void View::mouseMoveEvent(QMouseEvent *event)
           //by using the vector pointing in the camera direction and the up-vector of the camera. 
           currentCamAxis = glm::inverse(rotMatrix) * glm::vec4(glm::cross(cameraPosition - cameraTarget, upVector), 1.0); 
           
+          if(0)
+            currentCamAxis = glm::vec4(0.0, 0.0, 1.0, 1.0); 
+	    
           //depending on how much the user has moved the mouse in which direction, set rotation axis as either the camera axis or the z-axis.
           currentRotAxis = (std::abs(dotX) < std::abs(dotY)) ?
           glm::vec3(currentCamAxis.x, currentCamAxis.y, currentCamAxis.z) :
