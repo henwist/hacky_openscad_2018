@@ -2,7 +2,6 @@
 #include <QtGui/qevent.h>
 #include <QTimer>
 
-
 #include <QSurfaceFormat>
 
 #ifdef ENABLE_OPENCSG
@@ -230,6 +229,8 @@ View::View(QWidget *parent):
    void* handle = QOpenGLContext::openGLModuleHandle(); //hw 2019-03-09 : to see if we can extract a handle and which type of OpenGL context we have.
    std::cout << "QOpenGLContext::OpenGLModuleType: " <<  QOpenGLContext::openGLModuleType() << std::endl;
 
+  struct ObjectVertices* smallAxis = new struct ObjectVertices();
+  smallAxis3d.push_back(smallAxis);
 }
 
   
@@ -290,6 +291,26 @@ void View::privateDrawVertices()
       glDisableVertexAttribArray(attrib_vtex);
       glDisableVertexAttribArray(attrib_nmal);
     }
+
+    //draw little cross with axes labeled    
+    if(smallAxis3d[0]->m_isBuilt == true)
+    {
+      program.change_mat4(UNILOC_M , smallAxis3d[0]->m_m);
+      
+      // configure matrices - view matrix.
+      program.configure_mat4(UNILOC_V, glm::lookAt(glm::vec3(0.0, -1.0, 0.0), cameraTarget, upVector));
+      program.configure_mat4(UNILOC_P, e_matrix);
+
+      program.configure_attributes(ATTRIB_VERTEX, smallAxis3d[0]->m_ptr, 4); //four GLfloats per vertex
+      glDrawArrays(smallAxis3d[0]->m_primitive, 0, 24/4); //the lines, divided by four due to one vertex is four GLfloats.
+      
+      //configure matrices - rotation matrix, the x,y,z labels should not be rotated.
+      //program.configure_mat4(UNILOC_ROTMATRIX, e_matrix);
+
+      glDrawArrays(smallAxis3d[0]->m_primitive, 6, 56/4); //the x,y,z lables, divided by four due to one vertex is four GLfloats.
+      GLint attrib_vtex = glGetAttribLocation(program.getId(), ATTRIB_VERTEX);
+      glDisableVertexAttribArray(attrib_vtex);
+    }
 }
 
 void View::paintGL()
@@ -303,49 +324,50 @@ void View::paintGL()
   }
 
   GLView::paintGL();
+  
+  if (showaxes) 
+    showSmallaxes();
+
 
   glUseProgram(program.getId());
   glBindFramebuffer(GL_FRAMEBUFFER,0);
   
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  // 	//configure matrices - view matrix.
-  program.configure_mat4(UNILOC_V, this->getViewMatrix());
-
-  program.configure_mat4(UNILOC_P, this->getProjectionMatrix());
-
-
-  //configure matrices - inverse matrix for the v matrix.
-  v_inv = glm::inverse(this->getViewMatrix());
-  program.configure_mat4(UNILOC_V_INV, v_inv);
 
   //mv_inv = glm::transpose(glm::inverse(this->getViewMatrix() * m));
   //program.configure_mat4(UNILOC_MV_INV, mv_inv);
 
   //configure texture
   //program.configure_texture(UNILOC_MYTEXTURE2D, model.getTexture() /*mytexture2D*/, TEXTURE_WIDTH * TEXTURE_HEIGHT * TEXTURE_TEXEL_SIZE);
-
-
-  program.change_float(UNILOC_ALPHA, 1.0);
   
   if(angleValues.size() == 0)
     angleValues.push_back(new struct rotateData({currentRotAxis, 0.0}));
 
   for(auto rd : angleValues) //there is always one value in angleValues, namely the last rotation angle.
   {
-          
+      program.change_float(UNILOC_ALPHA, 1.0);
+
+      // 	//configure matrices - view matrix.
+      program.configure_mat4(UNILOC_V, this->getViewMatrix());
+
+      program.configure_mat4(UNILOC_P, this->getProjectionMatrix());
+
+      //configure matrices - inverse matrix for the v matrix.
+      v_inv = glm::inverse(this->getViewMatrix());
+      program.configure_mat4(UNILOC_V_INV, v_inv);
+      
       //configure matrices - rotation matrix.
       rotMatrix = glm::rotate( rotMatrix, rd->angle, rd->axis);
       program.configure_mat4(UNILOC_ROTMATRIX, rotMatrix);
 
       mv_inv = glm::inverse(rotMatrix);
-        
       program.configure_mat4(UNILOC_MV_INV, mv_inv);
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
       privateDrawVertices();
-    }
+  }
 
     //clear and add a rotation so the drawing of vertices always kick in above. 
     angleValues.clear();
@@ -1219,6 +1241,163 @@ void View::setOrthoMode(bool enabled)
 {
 // 	if (enabled) this->cam.setProjection(Camera::ProjectionType::ORTHOGONAL);
 // 	else this->cam.setProjection(Camera::ProjectionType::PERSPECTIVE);
+}
+
+
+
+void View::showSmallaxes() //hw 2019-03-28 : construct a builder for this smallAxes
+{
+   float dpi = this->getDPI();
+
+   //if(smallAxis3d[0]->m_dpi != dpi) //hw 2019-03-28 : just update if dpi or rotation has changed?
+     buildSmallAxes(dpi);
+}
+
+void View::buildSmallAxes(float dpi) //hw 2019-03-28 : construct a builder for this smallAxes
+{
+  //initializeOpenGLFunctions();
+
+   //float
+   //auto scale = 90;
+   //auto axescolor = ColorMap::getColor(*this->colorscheme, RenderColor::AXES_COLOR);
+  
+   //   smallAxis3d.clear();
+   
+  float scale = 90;
+
+   std::vector<GLfloat>* localVertices = new std::vector<GLfloat>();
+   
+   //here we construct the points that will draw a small cross for locating the x, y and z axes when rotating the model.
+   //xaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f); //needed by shader with vec4 for position, w-component
+   //xaxis stop point
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   //yaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+   //yaxis stop point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //zaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //zaxis stop point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   glm::mat4 p_local = glm::ortho(-scale * dpi * WINDOW_ASPECT_RATIO, 
+		       scale * dpi  * WINDOW_ASPECT_RATIO,
+		       -scale * dpi, scale * dpi, 
+		       -scale * dpi, scale * dpi); // In world coordinates
+
+   glm::mat4 v_local = glm::lookAt(glm::vec3(0.0, -1.0, 0.0), cameraTarget, upVector);
+
+   //here we apply what?
+   GLdouble xlabel_x, xlabel_y, xlabel_z;
+   glm::vec4 x = p_local * v_local * glm::vec4(12*dpi, 0.0f, 0.0f, 1.0f);
+   xlabel_x = std::round(x[0]); xlabel_y = std::round(x[1]);  xlabel_z = std::round(x[2]);
+ 
+   GLdouble ylabel_x, ylabel_y, ylabel_z;
+   glm::vec4 y = p_local * v_local  * glm::vec4(0.0f, 12*dpi, 0.0f, 1.0f);
+   ylabel_x = std::round(y[0]); ylabel_y = std::round(y[1]); ylabel_z = std::round(y[2]);
+
+   GLdouble zlabel_x, zlabel_y, zlabel_z;
+   glm::vec4 z = p_local * v_local * glm::vec4(0.0f, 0.0f, 12*dpi, 1.0f);
+   zlabel_x = std::round(z[0]); zlabel_y = std::round(z[1]); zlabel_z = std::round(z[2]);
+ 
+   float d = 3*dpi;
+   
+   // X Label
+   localVertices->push_back((GLfloat)xlabel_x-d); 
+   localVertices->push_back((GLfloat)xlabel_y-d); 
+   localVertices->push_back((GLfloat)xlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)xlabel_x+d); 
+   localVertices->push_back((GLfloat)xlabel_y+d); 
+   localVertices->push_back((GLfloat)xlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   //X Label cont
+   localVertices->push_back((GLfloat)xlabel_x-d); 
+   localVertices->push_back((GLfloat)xlabel_y+d); 
+   localVertices->push_back((GLfloat)xlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)xlabel_x+d); 
+   localVertices->push_back((GLfloat)xlabel_y-d); 
+   localVertices->push_back((GLfloat)xlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   // Y Label
+   localVertices->push_back((GLfloat)ylabel_x-d); 
+   localVertices->push_back((GLfloat)ylabel_y-d); 
+   localVertices->push_back((GLfloat)ylabel_z);
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)ylabel_x+d); 
+   localVertices->push_back((GLfloat)ylabel_y+d); 
+   localVertices->push_back((GLfloat)ylabel_z);
+   localVertices->push_back((GLfloat)1.0f);
+   //Y Label cont
+   localVertices->push_back((GLfloat)ylabel_x-d); 
+   localVertices->push_back((GLfloat)ylabel_y+d); 
+   localVertices->push_back((GLfloat)ylabel_z);
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)ylabel_x); 
+   localVertices->push_back((GLfloat)ylabel_y); 
+   localVertices->push_back((GLfloat)ylabel_z);
+   localVertices->push_back((GLfloat)1.0f); 
+   // Z Label
+   localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    
+   // Z Label cont
+    localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+   // Z Label cont
+    localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)zlabel_z); 
+   localVertices->push_back((GLfloat)1.0f);
+   
+   
+   smallAxis3d[0]->m_ptr = localVertices->data();
+   smallAxis3d[0]->m_size = (unsigned short) localVertices->size();
+   smallAxis3d[0]->m_m = 0.2f * glm::mat4(1.0f);
+   smallAxis3d[0]->m_primitive = GL_LINES;
+   smallAxis3d[0]->m_dpi = dpi;
+   smallAxis3d[0]->m_isBuilt = true;
+   
+   //smallAxis3d->push_back(smallAxis);
 }
 
 

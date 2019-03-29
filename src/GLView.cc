@@ -9,6 +9,11 @@
 #include <QtGui/QOpenGLFunctions>
 #include <iostream>
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #ifdef _WIN32
 #include <GL/wglew.h>
 // #elif !defined(__APPLE__)
@@ -170,19 +175,19 @@ void GLView::paintGL()
   glClearColor(bgcol[0], bgcol[1], bgcol[2], 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-/*
+
   setupCamera();
   if (this->cam.type == Camera::CameraType::GIMBAL) {
     // Only for GIMBAL cam
     // The crosshair should be fixed at the center of the viewport...
     if (showcrosshairs) GLView::showCrosshairs();
-    glTranslated(cam.object_trans.x(), cam.object_trans.y(), cam.object_trans.z());
+    //glTranslated(cam.object_trans.x(), cam.object_trans.y(), cam.object_trans.z());
     // ...the axis lines need to follow the object translation.
     if (showaxes) GLView::showAxes(axescolor);
     // mark the scale along the axis lines
     if (showaxes && showscale) GLView::showScalemarkers(axescolor);
   }
-
+/*
   glEnable(GL_LIGHTING);
   glDepthFunc(GL_LESS);
   //glCullFace(GL_BACK);
@@ -197,18 +202,18 @@ void GLView::paintGL()
 #endif
     this->renderer->draw(showfaces, showedges);
   }
-/*
+
   // Only for GIMBAL
-  glDisable(GL_LIGHTING);
+  //glDisable(GL_LIGHTING);
   if (showaxes) GLView::showSmallaxes(axescolor);
-*/
+/*
     static GLfloat data[] = {
        -0.5f,  -0.5f, 0.0f, 1.0f,
         0.5f,  -0.5f, 0.0f, 1.0f,
         0.5f,   0.5f, 0.0f, 1.0f
     };
 
-     GLint count_total_indices = 3;
+     //GLint count_total_indices = 3;
  
 
   //glprog.configure_attributes("vertex", data, 4);
@@ -216,6 +221,7 @@ void GLView::paintGL()
 //  glUseProgram(glprog.getId());	
 
 //  glDrawArrays(GL_TRIANGLES, 0, count_total_indices);
+*/
 }
 
 #ifdef ENABLE_OPENCSG
@@ -307,88 +313,145 @@ void GLView::initializeGL()
 
 void GLView::showSmallaxes(const Color4f &col)
 {
+/*
   initializeOpenGLFunctions();
 
-   // Fixme - this doesnt work in Vector Camera mode
- 
- 	auto dpi = this->getDPI();
-   // Small axis cross in the lower left corner
-   glDepthFunc(GL_ALWAYS);
- 
- 	// Set up an orthographic projection of the axis cross in the corner
-   //glMatrixMode(GL_PROJECTION);
-   //glLoadIdentity();
- 	//glTranslatef(-0.8f, -0.8f, 0.0f);
- 	auto scale = 90;
-   //glOrtho(-scale*dpi*aspectratio,scale*dpi*aspectratio,
- //					-scale*dpi,scale*dpi,
- //					-scale*dpi,scale*dpi);
-   //gluLookAt(0.0, -1.0, 0.0,
-// 						0.0, 0.0, 0.0,
- //						0.0, 0.0, 1.0);
- 	 
-   //glMatrixMode(GL_MODELVIEW);
-   //glLoadIdentity();
-   //glRotated(cam.object_rot.x(), 1.0, 0.0, 0.0);
-   //glRotated(cam.object_rot.y(), 0.0, 1.0, 0.0);
-   //glRotated(cam.object_rot.z(), 0.0, 0.0, 1.0);
- 
-   //glLineWidth(dpi);
-   //glBegin(GL_LINES);
-   //glColor3d(1.0, 0.0, 0.0);
-   //glVertex3d(0, 0, 0); glVertex3d(10*dpi, 0, 0);
-   //glColor3d(0.0, 1.0, 0.0);
-   //glVertex3d(0, 0, 0); glVertex3d(0, 10*dpi, 0);
-   //glColor3d(0.0, 0.0, 1.0);
-   //glVertex3d(0, 0, 0); glVertex3d(0, 0, 10*dpi);
-   //glEnd();
- 
-   GLdouble mat_model[16];
-   //glGetDoublev(GL_MODELVIEW_MATRIX, mat_model);
- 
-   GLdouble mat_proj[16];
-   //glGetDoublev(GL_PROJECTION_MATRIX, mat_proj);
- 
-   GLint viewport[4];
-   //glGetIntegerv(GL_VIEWPORT, viewport);
- 
+   //float
+   float dpi = this->getDPI();
+   auto scale = 90;
+
+   if(smallAxis3d.size() == 0 || (smallAxis3d.size() == 1 && smallAxis3d[0].m_dpi != dpi)) //just update if dpi has changed
+   {
+   smallAxis3d.clear();
+   
+   struct ObjectVertices* smallAxis = new struct ObjectVertices();
+   std::vector<GLfloat>* localVertices = new std::vector<GLfloat>();
+   
+   //here we construct the points that will draw a small cross for locating the x, y and z axes when rotating the model.
+   //xaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f); //needed by shader with vec4 for position, w-component
+   //xaxis stop point
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //yaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+   //yaxis stop point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //zaxis start point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //zaxis stop point
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)10*dpi); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   //here we apply what?
    GLdouble xlabel_x, xlabel_y, xlabel_z;
-   //gluProject(12*dpi, 0, 0, mat_model, mat_proj, viewport, &xlabel_x, &xlabel_y, &xlabel_z);
-   xlabel_x = std::round(xlabel_x); xlabel_y = std::round(xlabel_y);
+   glm::vec4 x = View::m_viewInstance->getProjectionMatrix() * View::m_viewInstance->getViewMatrix() * glm::vec4(12*dpi, 0.0f, 0.0f, 1.0f);
+   xlabel_x = std::round(x[0]); xlabel_y = std::round(x[1]);
  
    GLdouble ylabel_x, ylabel_y, ylabel_z;
-   //gluProject(0, 12*dpi, 0, mat_model, mat_proj, viewport, &ylabel_x, &ylabel_y, &ylabel_z);
-   ylabel_x = std::round(ylabel_x); ylabel_y = std::round(ylabel_y);
+   glm::vec4 y = View::m_viewInstance->getProjectionMatrix() * View::m_viewInstance->getViewMatrix() * glm::vec4(0.0f, 12*dpi, 0.0f, 1.0f);
+   ylabel_x = std::round(y[0]); ylabel_y = std::round(y[1]);
 
    GLdouble zlabel_x, zlabel_y, zlabel_z;
-   //gluProject(0, 0, 12*dpi, mat_model, mat_proj, viewport, &zlabel_x, &zlabel_y, &zlabel_z);
-   zlabel_x = std::round(zlabel_x); zlabel_y = std::round(zlabel_y);
- 
-   //glMatrixMode(GL_PROJECTION);
-   //glLoadIdentity();
-   //glTranslated(-1, -1, 0);
-   //glScaled(2.0/viewport[2], 2.0/viewport[3], 1);
- 
-   //glMatrixMode(GL_MODELVIEW);
-   //glLoadIdentity();
- 
-   //glColor3f(col[0], col[1], col[2]);
+   glm::vec4 z = View::m_viewInstance->getProjectionMatrix() * View::m_viewInstance->getViewMatrix() * glm::vec4(0.0f, 0.0f, 12*dpi, 1.0f);
+   zlabel_x = std::round(z[0]); zlabel_y = std::round(z[1]);
  
    float d = 3*dpi;
-   //glBegin(GL_LINES);
+   
    // X Label
-   //glVertex3d(xlabel_x-d, xlabel_y-d, 0); glVertex3d(xlabel_x+d, xlabel_y+d, 0);
-   //glVertex3d(xlabel_x-d, xlabel_y+d, 0); glVertex3d(xlabel_x+d, xlabel_y-d, 0);
+   localVertices->push_back((GLfloat)xlabel_x-d); 
+   localVertices->push_back((GLfloat)xlabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)xlabel_x+d); 
+   localVertices->push_back((GLfloat)xlabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   //X Label cont
+   localVertices->push_back((GLfloat)xlabel_x-d); 
+   localVertices->push_back((GLfloat)xlabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)xlabel_x+d); 
+   localVertices->push_back((GLfloat)xlabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+
    // Y Label
-   //glVertex3d(ylabel_x-d, ylabel_y-d, 0); glVertex3d(ylabel_x+d, ylabel_y+d, 0);
-   //glVertex3d(ylabel_x-d, ylabel_y+d, 0); glVertex3d(ylabel_x, ylabel_y, 0);
+   localVertices->push_back((GLfloat)ylabel_x-d); 
+   localVertices->push_back((GLfloat)ylabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)ylabel_x+d); 
+   localVertices->push_back((GLfloat)ylabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+   //Y Label cont
+   localVertices->push_back((GLfloat)ylabel_x-d); 
+   localVertices->push_back((GLfloat)ylabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)ylabel_x); 
+   localVertices->push_back((GLfloat)ylabel_y); 
+   localVertices->push_back((GLfloat)0.0f);
+   localVertices->push_back((GLfloat)1.0f);
+   
    // Z Label
-   //glVertex3d(zlabel_x-d, zlabel_y-d, 0); glVertex3d(zlabel_x+d, zlabel_y-d, 0);
-   //glVertex3d(zlabel_x-d, zlabel_y+d, 0); glVertex3d(zlabel_x+d, zlabel_y+d, 0);
-   //glVertex3d(zlabel_x-d, zlabel_y-d, 0); glVertex3d(zlabel_x+d, zlabel_y+d, 0);
-   // FIXME - depends on gimbal camera 'viewer distance'.. how to fix this
-   //         for VectorCamera?
-   //glEnd();
+   localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    
+   // Z Label cont
+    localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+
+   // Z Label cont
+    localVertices->push_back((GLfloat)zlabel_x-d); 
+   localVertices->push_back((GLfloat)zlabel_y-d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+    localVertices->push_back((GLfloat)zlabel_x+d); 
+   localVertices->push_back((GLfloat)zlabel_y+d); 
+   localVertices->push_back((GLfloat)0.0f); 
+   localVertices->push_back((GLfloat)1.0f);
+   
+   
+   smallAxis->m_ptr = localVertices->data();
+   smallAxis->m_size = (unsigned short) localVertices.size();
+   smallAxis->m_m = glm::mat4(1.0f);
+   smallAxis->m_primitive = GL_LINE;
+   smallAxis->m_dpi = dpi;
+   
+   smallAxis3d->push_back(smallAxis);
+   }
+*/
 }
 
 void GLView::showAxes(const Color4f &col)

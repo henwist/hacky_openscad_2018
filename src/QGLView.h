@@ -60,6 +60,7 @@
 #include "polyset.h"
 #include "CGAL_Nef_polyhedron.h"
 #include "cgalutils.h"
+#include "colormap.h"
 #include "polyset-utils.h"
 #include <algorithm>
 #include <sstream>
@@ -272,6 +273,9 @@ private:
   void InitOpenGLProgram();
   void privateDrawVertices();
 
+  void showSmallaxes();
+  void buildSmallAxes(float dpi);
+
 //many of these variables downwards will probably be integrated in a view component later on.
 glm::mat4 rotMatrix;
 glm::mat4 m;
@@ -410,11 +414,19 @@ private:
       GLfloat* m_ptr;
       unsigned short m_size;
       glm::mat4 m_m; //models matrix for local vertices
-
+      GLenum m_primitive;
+      
+      //this needs to be moved to a component later on... now used for smallAxes
+      float m_dpi;
+      bool m_isBuilt;
+      
       ObjectVertices(): 
       m_ptr(nullptr),
       m_size(0),
-      m_m(glm::mat4(1.0))
+      m_m(glm::mat4(1.0f)),
+      m_primitive(GL_TRIANGLES),
+      m_dpi(-1.0f),
+      m_isBuilt(false)
       { }
     };
 
@@ -424,9 +436,14 @@ private:
       float angle;
     };
 
+    //the vertices and normals needed to draw the objects
     std::vector<struct ObjectVertices*> objectVertices3d;
     std::vector<struct ObjectVertices*> objectNormals3d;
     
+    //Small axis cross in the lower left corner
+    std::vector<struct ObjectVertices*> smallAxis3d;
+    
+    //the angles of the mouse induced movements
     std::vector<struct rotateData*> angleValues;
 
     QOpenGLShaderProgram *m_program;
